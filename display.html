@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<title>LED Display met Fade</title>
+
+<style>
+html, body {
+  margin: 0;
+  width: 1920px;
+  height: 1080px;
+  background: black;
+  overflow: hidden;
+}
+
+#stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.screen {
+  position: absolute;
+  overflow: hidden;
+}
+
+.screen img {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: opacity 0.5s ease-in-out; /* fade */
+  opacity: 1;
+}
+</style>
+</head>
+
+<body>
+<div id="stage"></div>
+
+<script>
+const socket = new WebSocket("ws://localhost:8080");
+const screens = {};        // {screenId: imgElement}
+let layoutReady = false;
+let pendingMessages = [];
+
+fetch('/layout.json')
+  .then(r => r.json())
+  .then(layout => {
+    layout.screens.forEach(s => {
+      const div = document.createElement('div');
+      div.className = 'screen';
+      div.style.left = s.x + 'px';
+      div.style.top = s.y + 'px';
+      div.style.width = s.width + 'px';
+      div.style.height = s.height + 'px';
+
+      const img = document.createElement('img');
+      img.style.opacity = 0; // start onzichtbaar
+      div.appendChild(img);
+
+      document.getElementById('stage').appendChild(div);
+      screens[s.id] = img;
+    });
+
+    layoutReady = true;
+    pendingMessages.forEach(handleMessage);
+    pendingMessages = [];
+  });
+
+// fade helper
+function fadeImage(img, newSrc) {
+  if (!img) return;
+
+  // nieuwe img tijdelijk
+  const temp = document.createElement('img');
+  temp.src = newSrc + '?t=' + Date.now();
+  temp.style.position = 'absolute';
+  temp.style.width = '100%';
+  temp.style.height = '100%';
+  temp.style.objectFit = 'contain';
+  temp.style.opacity = 0;
+  temp.style.transition = 'opacity 0.5s ease-in-out';
+
+  img.parentElement.appendChild(temp);
+
+  // fade in
+  requestAnimationFrame(() => {
+    temp.style.opacity = 1;
+    img.style.opacity = 0;
+  });
+
+  // na fade = oude img verwijderen, temp blijft
+  setTimeout(() => {
+    img.parentElement.removeChild(img);
+    screens[Object.keys(screens).find(k => screens[k] === img)] = temp;
+  }, 500);
+}
+
+function handleMessage(msg) {
+  if (msg.type === 'state') {
+    Object.entries(msg.screens).forEach(([id, state]) => {
+      const img = screens[id];
+      if (img && state.src) {
+        fadeImage(img, state.src);
+      }
+    });
+  }
+}
+
+socket.onmessage = async e => {
+  let data = e.data;
+  if (data instanceof Blob) data = await data.text();
+  const msg = JSON.parse(data);
+
+  if (!layoutReady) {
+    pendingMessages.push(msg);
+  } else {
+    handleMessage(msg);
+  }
+};
+</script>
+</body>
+</html>

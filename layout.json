@@ -1,0 +1,45 @@
+{
+  "canvas": { "width": 1920, "height": 1080 },
+  "screens": [
+    {
+      "id": "screen1",
+      "x": 0,
+      "y": 0,
+      "width": 410,
+      "height": 123,
+      "meta": {
+        "name": "Main Entrance",
+        "lat": 52.370216,
+        "lng": 4.895168
+      }
+    },
+    {
+      "id": "screen2",
+      "x": 960,
+      "y": 0,
+      "width": 960,
+      "height": 1080,
+      "meta": {
+        "name": "Food Court",
+        "lat": 52.37095,
+        "lng": 4.8965
+      }
+    }
+  ],
+  "presets": [
+    {
+      "name": "Intro",
+      "screens": {
+        "screen1": "/content/screen1/test.png",
+        "screen2": "/content/screen2/test.png"
+      }
+    },
+    {
+      "name": "Scene A",
+      "screens": {
+        "screen1": "/content/screen1/sceneA.png",
+        "screen2": "/content/screen2/sceneA.png"
+      }
+    }
+  ]
+}

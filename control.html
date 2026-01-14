@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<title>LED Control met Radio Buttons</title>
+<style>
+body { font-family: sans-serif; padding: 20px; }
+h2 { margin-top: 20px; }
+.radio-group { margin-bottom: 10px; }
+label { margin-right: 15px; cursor: pointer; }
+button { padding: 10px 20px; margin: 5px; }
+</style>
+</head>
+
+<body>
+
+<h1>LED Control</h1>
+
+<!-- Individuele scherms met radio buttons -->
+<h2>Screen 1</h2>
+<div class="radio-group" id="screen1-radios">
+  <label><input type="radio" name="screen1" value="/content/screen1/a.png"> Test</label>
+  <label><input type="radio" name="screen1" value="/content/screen1/sceneA.png"> Scene A</label>
+  <label><input type="radio" name="screen1" value="/content/screen1/sceneB.png"> Scene B</label>
+  <label><input type="radio" name="screen1" value="/content/screen1/sceneC.png"> Scene C</label>
+</div>
+
+<h2>Screen 2</h2>
+<div class="radio-group" id="screen2-radios">
+  <label><input type="radio" name="screen2" value="/content/screen2/test.png"> Test</label>
+  <label><input type="radio" name="screen2" value="/content/screen2/sceneA.png"> Scene A</label>
+</div>
+
+<!-- Preset knoppen -->
+<h2>Presets</h2>
+<div id="preset-buttons">
+  <!-- Dynamisch geladen -->
+</div>
+
+<script>
+const socket = new WebSocket("ws://localhost:8080");
+
+// helper functie om één screen te updaten
+function setImage(screen, src) {
+  socket.send(JSON.stringify({
+    type: 'setImage',
+    screen,
+    src
+  }));
+}
+
+// Radio buttons listener
+function initRadioGroup(screenId) {
+  const radios = document.getElementsByName(screenId);
+  radios.forEach(radio => {
+    radio.addEventListener('change', () => {
+      if (radio.checked) setImage(screenId, radio.value);
+    });
+  });
+}
+
+// initialiseer radio listeners
+initRadioGroup('screen1');
+initRadioGroup('screen2');
+
+// presets laden vanuit layout.json
+fetch('/layout.json')
+  .then(r => r.json())
+  .then(layout => {
+    const container = document.getElementById('preset-buttons');
+    if (layout.presets) {
+      layout.presets.forEach(preset => {
+        const btn = document.createElement('button');
+        btn.textContent = preset.name;
+        btn.onclick = () => {
+          Object.entries(preset.screens).forEach(([screen, src]) => {
+            setImage(screen, src);
+
+            // update radio button selection automatisch
+            const radios = document.getElementsByName(screen);
+            radios.forEach(radio => {
+              radio.checked = radio.value === src;
+            });
+          });
+        };
+        container.appendChild(btn);
+      });
+    }
+  });
+</script>
+
+</body>
+</html>
