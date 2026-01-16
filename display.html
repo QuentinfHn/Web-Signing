@@ -2,13 +2,13 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<title>LED Display met Fade</title>
+<title>LED Display</title>
 
 <style>
 html, body {
   margin: 0;
-  width: 1920px;
-  height: 1080px;
+  width: 100%;
+  height: 100%;
   background: black;
   overflow: hidden;
 }
@@ -29,8 +29,6 @@ html, body {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  transition: opacity 0.5s ease-in-out; /* fade */
-  opacity: 1;
 }
 </style>
 </head>
@@ -39,85 +37,119 @@ html, body {
 <div id="stage"></div>
 
 <script>
+/* ================================
+   DISPLAY CONFIG
+================================ */
+const params = new URLSearchParams(window.location.search);
+const DISPLAY_ID = params.get('display') || 'display1';
+const FADE_TIME = 500; // ms
+
 const socket = new WebSocket("ws://localhost:8080");
-const screens = {};        // {screenId: imgElement}
+
+const screens = {};           // screenId -> img element
 let layoutReady = false;
 let pendingMessages = [];
 
+/* ================================
+   LOAD LAYOUT
+================================ */
 fetch('/layout.json')
   .then(r => r.json())
   .then(layout => {
-    layout.screens.forEach(s => {
-      const div = document.createElement('div');
-      div.className = 'screen';
-      div.style.left = s.x + 'px';
-      div.style.top = s.y + 'px';
-      div.style.width = s.width + 'px';
-      div.style.height = s.height + 'px';
+    layout.screens
+      .filter(s => s.display === DISPLAY_ID)
+      .forEach(s => {
+        const div = document.createElement('div');
+        div.className = 'screen';
+        div.style.left = s.x + 'px';
+        div.style.top = s.y + 'px';
+        div.style.width = s.width + 'px';
+        div.style.height = s.height + 'px';
 
-      const img = document.createElement('img');
-      img.style.opacity = 0; // start onzichtbaar
-      div.appendChild(img);
+        const img = document.createElement('img');
+        img.style.opacity = 0;
+        img.style.transition = `opacity ${FADE_TIME}ms ease-in-out`;
 
-      document.getElementById('stage').appendChild(div);
-      screens[s.id] = img;
-    });
+        div.appendChild(img);
+        document.getElementById('stage').appendChild(div);
+
+        screens[s.id] = img;
+      });
 
     layoutReady = true;
     pendingMessages.forEach(handleMessage);
     pendingMessages = [];
   });
 
-// fade helper
-function fadeImage(img, newSrc) {
-  if (!img) return;
+/* ================================
+   FADE HELPER
+================================ */
+function fadeImage(oldImg, src) {
+  if (!oldImg) return;
 
-  // nieuwe img tijdelijk
-  const temp = document.createElement('img');
-  temp.src = newSrc + '?t=' + Date.now();
-  temp.style.position = 'absolute';
-  temp.style.width = '100%';
-  temp.style.height = '100%';
-  temp.style.objectFit = 'contain';
-  temp.style.opacity = 0;
-  temp.style.transition = 'opacity 0.5s ease-in-out';
+  const parent = oldImg.parentElement;
 
-  img.parentElement.appendChild(temp);
+  const newImg = document.createElement('img');
+  newImg.src = src + '?t=' + Date.now();
+  newImg.style.opacity = 0;
+  newImg.style.transition = `opacity ${FADE_TIME}ms ease-in-out`;
+  newImg.style.width = '100%';
+  newImg.style.height = '100%';
+  newImg.style.objectFit = 'contain';
+  newImg.style.position = 'absolute';
 
-  // fade in
+  parent.appendChild(newImg);
+
   requestAnimationFrame(() => {
-    temp.style.opacity = 1;
-    img.style.opacity = 0;
+    newImg.style.opacity = 1;
+    oldImg.style.opacity = 0;
   });
 
-  // na fade = oude img verwijderen, temp blijft
   setTimeout(() => {
-    img.parentElement.removeChild(img);
-    screens[Object.keys(screens).find(k => screens[k] === img)] = temp;
-  }, 500);
-}
-
-function handleMessage(msg) {
-  if (msg.type === 'state') {
-    Object.entries(msg.screens).forEach(([id, state]) => {
-      const img = screens[id];
-      if (img && state.src) {
-        fadeImage(img, state.src);
-      }
+    parent.removeChild(oldImg);
+    Object.keys(screens).forEach(id => {
+      if (screens[id] === oldImg) screens[id] = newImg;
     });
-  }
+  }, FADE_TIME);
 }
 
-socket.onmessage = async e => {
-  let data = e.data;
-  if (data instanceof Blob) data = await data.text();
-  const msg = JSON.parse(data);
+/* ================================
+   HANDLE STATE
+================================ */
+function handleMessage(msg) {
+  if (msg.type !== 'state') return;
 
-  if (!layoutReady) {
-    pendingMessages.push(msg);
-  } else {
-    handleMessage(msg);
-  }
+  Object.entries(msg.screens).forEach(([id, state]) => {
+    if (!screens[id]) return;
+    if (state.src) {
+      fadeImage(screens[id], state.src);
+    }
+  });
+}
+
+/* ================================
+   WEBSOCKET
+================================ */
+socket.onopen = () => console.log("Display WS connected");
+socket.onerror = err => console.error("Display WS error:", err);
+socket.onclose = () => console.warn("Display WS closed");
+socket.onmessage = e => {
+  (async () => {
+    try {
+      let data = e.data;
+      if (data instanceof Blob) data = await data.text();
+      console.log("Display received WS message:", data);
+
+      const msg = JSON.parse(data);
+      if (!layoutReady) {
+        pendingMessages.push(msg);
+      } else {
+        handleMessage(msg);
+      }
+    } catch(err) {
+      console.error("Error handling WS message:", err);
+    }
+  })();
 };
 </script>
 </body>

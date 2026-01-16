@@ -1,45 +1,355 @@
 {
-  "canvas": { "width": 1920, "height": 1080 },
+  "canvas": {
+    "display1": { "width": 1920, "height": 1080 },
+    "display2": { "width": 1920, "height": 1080 }
+  },
+
   "screens": [
     {
-      "id": "screen1",
+      "id": "aanloopscherm1",
+      "display": "display1",
       "x": 0,
       "y": 0,
-      "width": 410,
-      "height": 123,
+      "width": 512,
+      "height": 512,
       "meta": {
-        "name": "Main Entrance",
-        "lat": 52.370216,
-        "lng": 4.895168
+        "name": "Aanloopscherm 1",
+        "lat": 50.846167887343995,
+        "lng": 5.692279202016551
       }
     },
     {
-      "id": "screen2",
-      "x": 960,
+      "id": "aanloopscherm2",
+      "display": "display1",
+      "x": 512,
       "y": 0,
-      "width": 960,
-      "height": 1080,
+      "width": 512,
+      "height": 512,
       "meta": {
-        "name": "Food Court",
-        "lat": 52.37095,
-        "lng": 4.8965
+        "name": "Aanloopscherm 2",
+        "lat": 50.84934790740343,
+        "lng": 5.6927470757633705
+      }
+    },
+    {
+      "id": "aanloopscherm3",
+      "display": "display1",
+      "x": 1024,
+      "y": 0,
+      "width": 512,
+      "height": 512,
+      "meta": {
+        "name": "Aanloopscherm 3",
+        "lat": 50.84969618407943,
+        "lng": 5.704710844473488
+      }
+    },
+    {
+      "id": "aanloopscherm4",
+      "display": "display1",
+      "x": 0,
+      "y": 512,
+      "width": 512,
+      "height": 512,
+      "meta": {
+        "name": "Aanloopscherm 4",
+        "lat": 50.85253624507323,
+        "lng": 5.690325323971315
+      }
+    },
+    {
+      "id": "aanloopscherm5",
+      "display": "display1",
+      "x": 512,
+      "y": 512,
+      "width": 512,
+      "height": 512,
+      "meta": {
+        "name": "Aanloopscherm 5",
+        "lat": 50.84955509125214,
+        "lng": 5.686413745436391
+      }
+    },
+    {
+      "id": "aanloopscherm6",
+      "display": "display1",
+      "x": 1024,
+      "y": 512,
+      "width": 512,
+      "height": 512,
+      "meta": {
+        "name": "Aanloopscherm 6",
+        "lat": 50.8470390513157,
+        "lng": 5.694961978210002
+      }
+    },
+    {
+      "id": "aanloopscherm7",
+      "display": "display2",
+      "x": 416,
+      "y": 312,
+      "width": 512,
+      "height": 512,
+      "meta": {
+        "name": "Aanloopscherm 7",
+        "lat": 50.84501327711898,
+        "lng": 5.683441089795824
+      }
+    },
+    {
+      "id": "screen1",
+      "display": "display2",
+      "x": 0,
+      "y": 0,
+      "width": 416,
+      "height": 104,
+      "meta": {
+        "name": "Scherm 1",
+        "lat": 50.84875661125761,
+        "lng": 5.689236564400955
+      }
+    },
+    { 
+      "id": "screen2",
+      "display": "display2",
+      "x": 416,
+      "y": 0,
+      "width": 416,
+      "height": 104,
+      "meta": {
+        "name": "Scherm 2",
+        "lat": 50.84876594908792,
+        "lng": 5.68934210979543
+      }
+    },
+    {
+      "id": "screen3",
+      "display": "display2",
+      "x": 832,
+      "y": 0,
+      "width": 416,
+      "height": 104,
+      "meta": {
+        "name": "Scherm 3",
+        "lat": 50.8487701708642,
+        "lng": 5.689801037603975
+      }
+    },
+    {
+      "id": "screen4",
+      "display": "display2",
+      "x": 1248,
+      "y": 0,
+      "width": 416,
+      "height": 104,
+      "meta": {
+        "name": "Scherm 4",
+        "lat": 50.84876847739941,
+        "lng": 5.689857363989395
+      }
+    },
+    {
+      "id": "screen5",
+      "display": "display2",
+      "x": 0,
+      "y": 104,
+      "width": 416,
+      "height": 104,
+      "meta": {
+        "name": "Scherm 5",
+        "lat": 50.84888757581089,
+        "lng": 5.690416942819802
+      }
+    },
+    {
+      "id": "screen6",
+      "display": "display2",
+      "x": 416,
+      "y": 104,
+      "width": 416,
+      "height": 104,
+      "meta": {
+        "name": "Scherm 6",
+        "lat": 50.84889773657286,
+        "lng": 5.690466563683148
+      }
+    },
+    {
+      "id": "screen7",
+      "display": "display2",
+      "x": 832,
+      "y": 104,
+      "width": 416,
+      "height": 104,
+      "meta": {
+        "name": "Scherm 7",
+        "lat": 50.84896081792114,
+        "lng": 5.69074081954556
+      }
+    },
+    {
+      "id": "screen8",
+      "display": "display2",
+      "x": 0,
+      "y": 208,
+      "width": 416,
+      "height": 104,
+      "meta": {
+        "name": "Scherm 8",
+        "lat": 50.84684727718707,
+        "lng": 5.6918542476320315
+      }
+    },
+    {
+      "id": "screen9",
+      "display": "display2",
+      "x": 416,
+      "y": 208,
+      "width": 416,
+      "height": 104,
+      "meta": {
+        "name": "Scherm 9",
+        "lat": 50.847047288941404,
+        "lng": 5.69278294502667
+      }
+    },
+    {
+      "id": "screen10",
+      "display": "display2",
+      "x": 832,
+      "y": 208,
+      "width": 416,
+      "height": 104,
+      "meta": {
+        "name": "Scherm 10",
+        "lat": 50.84716414218003,
+        "lng": 5.692867434604799
+      }
+    },
+    {
+      "id": "screen11",
+      "display": "display2",
+      "x": 1248,
+      "y": 208,
+      "width": 416,
+      "height": 104,
+      "meta": {
+        "name": "Scherm 11",
+        "lat": 50.84630523711525,
+        "lng": 5.692204621447333
+      }
+    },
+    {
+      "id": "EHBO",
+      "display": "display2",
+      "x": 0,
+      "y": 312,
+      "width": 416,
+      "height": 416,
+      "meta": {
+        "name": "EHBO",
+        "lat": 50.84920187974676,
+        "lng": 5.6879996970613
       }
     }
   ],
+
   "presets": [
     {
-      "name": "Intro",
+      "name": "Platielstraat – Scenario 1",
       "screens": {
-        "screen1": "/content/screen1/test.png",
-        "screen2": "/content/screen2/test.png"
+        "screen1": "/content/platielstraat/scenario1/screen1.png",
+        "screen2": "/content/platielstraat/scenario1/screen2.png",
+        "screen3": "/content/platielstraat/scenario1/screen3.png",
+        "screen4": "/content/platielstraat/scenario1/screen4.png",
+        "screen5": "/content/platielstraat/scenario1/screen5.png",
+        "screen6": "/content/platielstraat/scenario1/screen6.png",
+        "screen7": "/content/platielstraat/scenario1/screen7.png"
       }
     },
     {
-      "name": "Scene A",
+      "name": "Platielstraat – Scenario 2",
       "screens": {
-        "screen1": "/content/screen1/sceneA.png",
-        "screen2": "/content/screen2/sceneA.png"
+        "screen1": "/content/platielstraat/scenario2/screen1.png",
+        "screen2": "/content/platielstraat/scenario2/screen2.png",
+        "screen3": "/content/platielstraat/scenario2/screen3.png",
+        "screen4": "/content/platielstraat/scenario2/screen4.png",
+        "screen5": "/content/platielstraat/scenario2/screen5.png",
+        "screen6": "/content/platielstraat/scenario2/screen6.png",
+        "screen7": "/content/platielstraat/scenario2/screen7.png"
       }
+    },
+    {
+      "name": "Platielstraat – Scenario 3",
+      "screens": {
+        "screen1": "/content/platielstraat/scenario3/screen1.png",
+        "screen2": "/content/platielstraat/scenario3/screen2.png",
+        "screen3": "/content/platielstraat/scenario3/screen3.png",
+        "screen4": "/content/platielstraat/scenario3/screen4.png",
+        "screen5": "/content/platielstraat/scenario3/screen5.png",
+        "screen6": "/content/platielstraat/scenario3/screen6.png",
+        "screen7": "/content/platielstraat/scenario3/screen7.png"
+      }
+    },
+    {
+      "name": "Platielstraat – Scenario 4",
+      "screens": {
+        "screen1": "/content/platielstraat/scenario4/screen1.png",
+        "screen2": "/content/platielstraat/scenario4/screen2.png",
+        "screen3": "/content/platielstraat/scenario4/screen3.png",
+        "screen4": "/content/platielstraat/scenario4/screen4.png",
+        "screen5": "/content/platielstraat/scenario4/screen5.png",
+        "screen6": "/content/platielstraat/scenario4/screen6.png",
+        "screen7": "/content/platielstraat/scenario4/screen7.png"
+      }
+    },
+    {
+      "name": "Platielstraat – Test",
+      "screens": {
+        "screen1": "/content/platielstraat/test/screen1.png",
+        "screen2": "/content/platielstraat/test/screen2.png",
+        "screen3": "/content/platielstraat/test/screen3.png",
+        "screen4": "/content/platielstraat/test/screen4.png",
+        "screen5": "/content/platielstraat/test/screen5.png",
+        "screen6": "/content/platielstraat/test/screen6.png",
+        "screen7": "/content/platielstraat/test/screen7.png"
+      }
+    },
+    {
+    "name": "Koestraat – Scenario 1",
+    "screens": {
+      "screen8": "/content/koestraat/scenario1/screen8.png",
+      "screen9": "/content/koestraat/scenario1/screen9.png",
+      "screen10": "/content/koestraat/scenario1/screen10.png",
+      "screen11": "/content/koestraat/scenario1/screen11.png"
     }
+  },
+    {
+    "name": "Koestraat – Scenario 2",
+    "screens": {
+      "screen8": "/content/koestraat/scenario2/screen8.png",
+      "screen9": "/content/koestraat/scenario2/screen9.png",
+      "screen10": "/content/koestraat/scenario2/screen10.png",
+      "screen11": "/content/koestraat/scenario2/screen11.png"
+    }
+  },
+    {
+    "name": "Koestraat – Scenario 3",
+    "screens": {
+      "screen8": "/content/koestraat/scenario3/screen8.png",
+      "screen9": "/content/koestraat/scenario3/screen9.png",
+      "screen10": "/content/koestraat/scenario3/screen10.png",
+      "screen11": "/content/koestraat/scenario3/screen11.png"
+    }
+  },
+    {
+    "name": "Koestraat – Test",
+    "screens": {
+      "screen8": "/content/koestraat/test/screen8.png",
+      "screen9": "/content/koestraat/test/screen9.png",
+      "screen10": "/content/koestraat/test/screen10.png",
+      "screen11": "/content/koestraat/test/screen11.png"
+    }
+  }
   ]
 }
