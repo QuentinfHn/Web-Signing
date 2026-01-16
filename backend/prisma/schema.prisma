@@ -1,0 +1,56 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Screen {
+  id        String  @id
+  displayId String
+  x         Int
+  y         Int
+  width     Int
+  height    Int
+  name      String?
+  lat       Float?
+  lng       Float?
+
+  @@index([displayId])
+}
+
+model Preset {
+  id      String @id @default(cuid())
+  name    String
+  screens String // JSON string: { screenId: imagePath }
+}
+
+model ScreenState {
+  screenId  String   @id
+  imageSrc  String?
+  updatedAt DateTime @updatedAt
+}
+
+model Content {
+  id        String   @id @default(cuid())
+  filename  String
+  path      String   @unique
+  category  String
+  mimeType  String
+  size      Int
+  createdAt DateTime @default(now())
+
+  @@index([category])
+}
+
+model ScenarioAssignment {
+  id        String @id @default(cuid())
+  screenId  String
+  scenario  String // "Test", "Scene 1", "Scene 2", "Scene 3"
+  imagePath String
+
+  @@unique([screenId, scenario])
+  @@index([screenId])
+}
