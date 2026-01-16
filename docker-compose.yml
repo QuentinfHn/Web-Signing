@@ -1,0 +1,23 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./content:/app/content:ro
+      - led-data:/app/data
+    environment:
+      - DATABASE_URL=file:/app/data/led.db
+      - NODE_ENV=production
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  led-data:
