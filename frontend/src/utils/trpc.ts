@@ -34,4 +34,5 @@ export type Display = RouterOutput["displays"]["list"][number];
 export type Screen = RouterOutput["screens"]["list"][number];
 export type Preset = RouterOutput["presets"]["list"][number];
 export type Content = RouterOutput["content"]["list"][number];
+export type Scenario = RouterOutput["scenarioNames"]["list"][number];
 

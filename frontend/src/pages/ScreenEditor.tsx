@@ -14,7 +14,6 @@ interface ImportResult {
 export default function ScreenEditor() {
     // Display state
     const [displays, setDisplays] = useState<Display[]>([]);
-    const [newDisplayId, setNewDisplayId] = useState("");
     const [newDisplayName, setNewDisplayName] = useState("");
 
     // Screen state
@@ -105,18 +104,16 @@ export default function ScreenEditor() {
 
     // Display handlers
     const handleCreateDisplay = async () => {
-        if (!newDisplayId.trim()) return;
+        if (!newDisplayName.trim()) return;
         try {
             await trpcClient.displays.create.mutate({
-                id: newDisplayId.trim(),
-                name: newDisplayName.trim() || undefined,
+                name: newDisplayName.trim(),
             });
-            setNewDisplayId("");
             setNewDisplayName("");
             await loadDisplays();
         } catch (error) {
             console.error("Failed to create display:", error);
-            alert("Aanmaken mislukt - controleer of het ID uniek is");
+            alert("Aanmaken mislukt - controleer of de naam uniek is");
         }
     };
 
@@ -434,17 +431,11 @@ export default function ScreenEditor() {
                     <div className="add-display-form">
                         <input
                             type="text"
-                            placeholder="ID"
-                            value={newDisplayId}
-                            onChange={(e) => setNewDisplayId(e.target.value)}
-                            className="input-small"
-                        />
-                        <input
-                            type="text"
-                            placeholder="Naam (optioneel)"
+                            placeholder="Nieuwe display naam..."
                             value={newDisplayName}
                             onChange={(e) => setNewDisplayName(e.target.value)}
                             className="input-small"
+                            onKeyDown={(e) => e.key === "Enter" && handleCreateDisplay()}
                         />
                         <button className="btn-primary btn-small" onClick={handleCreateDisplay}>+</button>
                     </div>

@@ -42,23 +42,31 @@ model ScreenState {
 }
 
 model Content {
-  id        String   @id @default(cuid())
-  filename  String
-  path      String   @unique
-  category  String
-  mimeType  String
-  size      Int
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  filename   String
+  path       String   @unique
+  category   String
+  mimeType   String
+  size       Int
+  isFavorite Boolean  @default(false)
+  createdAt  DateTime @default(now())
 
   @@index([category])
+  @@index([isFavorite])
 }
 
 model ScenarioAssignment {
   id        String @id @default(cuid())
   screenId  String
-  scenario  String // "Test", "Scene 1", "Scene 2", "Scene 3"
+  scenario  String // References Scenario.name
   imagePath String
 
   @@unique([screenId, scenario])
   @@index([screenId])
+}
+
+model Scenario {
+  id           String @id @default(cuid())
+  name         String @unique
+  displayOrder Int    @default(0)
 }

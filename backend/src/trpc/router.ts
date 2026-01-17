@@ -18,12 +18,14 @@ export const displayRouter = router({
 
     create: publicProcedure
         .input(z.object({
-            id: z.string().min(1),
-            name: z.string().optional(),
+            id: z.string().optional(),
+            name: z.string().min(1),
         }))
         .mutation(async ({ input }) => {
+            // Auto-generate ID if not provided
+            const id = input.id?.trim() || `disp_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
             return prisma.display.create({
-                data: { id: input.id, name: input.name ?? null },
+                data: { id, name: input.name },
             });
         }),
 
@@ -347,6 +349,27 @@ export const contentRouter = router({
             await prisma.content.delete({ where: { id: input.id } });
             return { success: true };
         }),
+
+    toggleFavorite: publicProcedure
+        .input(z.object({ id: z.string() }))
+        .mutation(async ({ input }) => {
+            const content = await prisma.content.findUnique({
+                where: { id: input.id },
+            });
+            if (!content) throw new Error("Content not found");
+
+            return prisma.content.update({
+                where: { id: input.id },
+                data: { isFavorite: !content.isFavorite },
+            });
+        }),
+
+    getFavorites: publicProcedure.query(async () => {
+        return prisma.content.findMany({
+            where: { isFavorite: true },
+            orderBy: { filename: "asc" },
+        });
+    }),
 });
 
 // Scenarios router - manage scenario-content assignments
@@ -426,6 +449,84 @@ export const scenariosRouter = router({
     }),
 });
 
+// Scenario names router - manage persistent scenario/scene names
+export const scenarioNamesRouter = router({
+    list: publicProcedure.query(async () => {
+        return prisma.scenario.findMany({
+            orderBy: { displayOrder: "asc" },
+        });
+    }),
+
+    create: publicProcedure
+        .input(z.object({
+            name: z.string().min(1),
+            displayOrder: z.number().optional(),
+        }))
+        .mutation(async ({ input }) => {
+            // Get max displayOrder if not provided
+            let order = input.displayOrder;
+            if (order === undefined) {
+                const max = await prisma.scenario.findFirst({
+                    orderBy: { displayOrder: "desc" },
+                });
+                order = (max?.displayOrder ?? 0) + 1;
+            }
+            return prisma.scenario.create({
+                data: { name: input.name, displayOrder: order },
+            });
+        }),
+
+    rename: publicProcedure
+        .input(z.object({
+            oldName: z.string(),
+            newName: z.string().min(1),
+        }))
+        .mutation(async ({ input }) => {
+            // Update the scenario name
+            const updated = await prisma.scenario.update({
+                where: { name: input.oldName },
+                data: { name: input.newName },
+            });
+
+            // Update all ScenarioAssignments that reference this scenario
+            await prisma.scenarioAssignment.updateMany({
+                where: { scenario: input.oldName },
+                data: { scenario: input.newName },
+            });
+
+            return updated;
+        }),
+
+    delete: publicProcedure
+        .input(z.object({ name: z.string() }))
+        .mutation(async ({ input }) => {
+            // Delete all assignments for this scenario
+            await prisma.scenarioAssignment.deleteMany({
+                where: { scenario: input.name },
+            });
+            // Delete the scenario
+            await prisma.scenario.delete({
+                where: { name: input.name },
+            });
+            return { success: true };
+        }),
+
+    // Seed default scenarios if none exist
+    seedDefaults: publicProcedure.mutation(async () => {
+        const count = await prisma.scenario.count();
+        if (count === 0) {
+            const defaults = ["Scene 1", "Scene 2", "Scene 3"];
+            for (let i = 0; i < defaults.length; i++) {
+                await prisma.scenario.create({
+                    data: { name: defaults[i], displayOrder: i },
+                });
+            }
+            return { created: defaults.length };
+        }
+        return { created: 0 };
+    }),
+});
+
 // Main app router
 export const appRouter = router({
     displays: displayRouter,
@@ -434,6 +535,7 @@ export const appRouter = router({
     state: stateRouter,
     content: contentRouter,
     scenarios: scenariosRouter,
+    scenarioNames: scenarioNamesRouter,
 });
 
 export type AppRouter = typeof appRouter;
