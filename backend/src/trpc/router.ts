@@ -101,7 +101,7 @@ export const screenRouter = router({
             y: z.number().optional(),
             width: z.number().optional(),
             height: z.number().optional(),
-            name: z.string().optional(),
+            name: z.string().optional().nullable(),
             displayId: z.string().optional(),
             lat: z.number().optional().nullable(), // Allow null to clear
             lng: z.number().optional().nullable(),
@@ -249,7 +249,7 @@ export const presetRouter = router({
         const presets = await prisma.preset.findMany();
         return presets.map((p: { id: string; name: string; screens: string }) => ({
             ...p,
-            screens: JSON.parse(p.screens) as Record<string, string>,
+            screens: z.record(z.string(), z.string()).parse(JSON.parse(p.screens)),
         }));
     }),
 
@@ -261,7 +261,7 @@ export const presetRouter = router({
             });
             if (!preset) throw new Error("Preset not found");
 
-            const screens = JSON.parse(preset.screens) as Record<string, string>;
+            const screens = z.record(z.string(), z.string()).parse(JSON.parse(preset.screens));
 
             // Update all screen states
             for (const [screenId, imageSrc] of Object.entries(screens)) {
@@ -370,7 +370,7 @@ export const scenariosRouter = router({
             // Return as a map: { scenario: imagePath }
             return Object.fromEntries(
                 assignments.map((a) => [a.scenario, a.imagePath])
-            ) as Record<string, string>;
+            );
         }),
 
     set: publicProcedure

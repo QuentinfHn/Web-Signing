@@ -76,15 +76,12 @@ export default function ScreenEditor() {
 
     const loadDisplays = async () => {
         try {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const data = await (trpcClient.displays as any).list.query();
+            const data = await trpcClient.displays.list.query();
             setDisplays(data);
             // Initialize displays from existing screens if none exist
             if (data.length === 0) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                await (trpcClient.displays as any).initFromScreens.mutate();
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const newData = await (trpcClient.displays as any).list.query();
+                await trpcClient.displays.initFromScreens.mutate();
+                const newData = await trpcClient.displays.list.query();
                 setDisplays(newData);
             }
         } catch (error) {
@@ -94,8 +91,7 @@ export default function ScreenEditor() {
 
     const loadScreens = async () => {
         try {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const data = await (trpcClient.screens as any).list.query();
+            const data = await trpcClient.screens.list.query();
             setScreens(data);
         } catch (error) {
             console.error("Failed to load screens:", error);
@@ -111,8 +107,7 @@ export default function ScreenEditor() {
     const handleCreateDisplay = async () => {
         if (!newDisplayId.trim()) return;
         try {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await (trpcClient.displays as any).create.mutate({
+            await trpcClient.displays.create.mutate({
                 id: newDisplayId.trim(),
                 name: newDisplayName.trim() || undefined,
             });
@@ -131,8 +126,7 @@ export default function ScreenEditor() {
 
     const handleDeleteDisplay = async (id: string) => {
         try {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await (trpcClient.displays as any).delete.mutate({ id });
+            await trpcClient.displays.delete.mutate({ id });
             await loadDisplays();
             if (selectedDisplayId === id) {
                 setSelectedDisplayId(displays.find(d => d.id !== id)?.id || null);
@@ -198,8 +192,7 @@ export default function ScreenEditor() {
     const handleSave = async () => {
         if (!editingId || !formData) return;
         try {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await (trpcClient.screens as any).update.mutate({
+            await trpcClient.screens.update.mutate({
                 id: editingId,
                 x: formData.x,
                 y: formData.y,
@@ -226,8 +219,7 @@ export default function ScreenEditor() {
 
     const handleDelete = async (id: string) => {
         try {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await (trpcClient.screens as any).delete.mutate({ id });
+            await trpcClient.screens.delete.mutate({ id });
             setEditingId(null);
             await loadScreens();
             await loadDisplays();
@@ -252,17 +244,16 @@ export default function ScreenEditor() {
             return;
         }
         try {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await (trpcClient.screens as any).create.mutate({
+            await trpcClient.screens.create.mutate({
                 displayId: newScreenData.displayId,
                 x: newScreenData.x,
                 y: newScreenData.y,
                 width: newScreenData.width,
                 height: newScreenData.height,
-                name: newScreenData.name || null,
-                lat: newScreenData.lat || null,
-                lng: newScreenData.lng || null,
-                address: newScreenData.address || null,
+                name: newScreenData.name || undefined,
+                lat: newScreenData.lat || undefined,
+                lng: newScreenData.lng || undefined,
+                address: newScreenData.address || undefined,
             });
             setIsCreating(false);
             setNewScreenData({
@@ -297,8 +288,7 @@ export default function ScreenEditor() {
     // Export handler
     const handleExport = async () => {
         try {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const data = await (trpcClient.screens as any).exportAll.query();
+            const data = await trpcClient.screens.exportAll.query();
             const json = JSON.stringify(data, null, 2);
             const blob = new Blob([json], { type: "application/json" });
             const url = URL.createObjectURL(blob);
@@ -327,8 +317,7 @@ export default function ScreenEditor() {
             if (!data.screens || !Array.isArray(data.screens)) {
                 throw new Error("Ongeldig bestandsformaat: 'screens' array ontbreekt");
             }
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const result = await (trpcClient.screens as any).importScreens.mutate({
+            const result = await trpcClient.screens.importScreens.mutate({
                 screens: data.screens,
                 conflictMode,
             });

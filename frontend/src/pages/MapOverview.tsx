@@ -52,10 +52,8 @@ export default function MapOverview() {
     const { connected } = useWebSocket(handleStateUpdate);
 
     useEffect(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (trpcClient.screens as any).list.query().then(setScreens).catch(console.error);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (trpcClient.scenarios as any).getAll.query().then(setScenarios).catch(console.error);
+        trpcClient.screens.list.query().then(setScreens).catch(console.error);
+        trpcClient.scenarios.getAll.query().then(setScenarios).catch(console.error);
     }, []);
 
     // Filter screens with valid coordinates

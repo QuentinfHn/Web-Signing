@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { trpcClient, Preset, Content, Screen } from "../utils/trpc";
 import { useWebSocket, ScreenState } from "../utils/websocket";
 
-const SCENARIOS = ["Test", "Scene 1", "Scene 2", "Scene 3"];
+const DEFAULT_SCENARIOS = ["Test", "Scene 1", "Scene 2", "Scene 3"];
 
 type ScenarioAssignments = Record<string, Record<string, string>>;
 
@@ -15,6 +15,9 @@ export default function Control() {
     const [editingScreen, setEditingScreen] = useState<string | null>(null);
     const [editingScenario, setEditingScenario] = useState<string | null>(null);
     const [screens, setScreens] = useState<Screen[]>([]);
+    const [scenarios, setScenarios] = useState<string[]>(DEFAULT_SCENARIOS);
+    const [renamingScenario, setRenamingScenario] = useState<string | null>(null);
+    const [newScenarioName, setNewScenarioName] = useState<string>("");
 
     const handleStateUpdate = useCallback((state: ScreenState) => {
         setScreenStates(state);
@@ -24,14 +27,14 @@ export default function Control() {
 
     // Fetch data on mount
     useEffect(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (trpcClient.presets as any).list.query().then(setPresets).catch(console.error);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (trpcClient.scenarios as any).getAll.query().then(setScenarioAssignments).catch(console.error);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (trpcClient.content as any).list.query({}).then(setContentLibrary).catch(console.error);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (trpcClient.screens as any).list.query().then(setScreens).catch(console.error);
+         
+        trpcClient.presets.list.query().then(setPresets).catch(console.error);
+         
+        trpcClient.scenarios.getAll.query().then(setScenarioAssignments).catch(console.error);
+         
+        trpcClient.content.list.query({}).then(setContentLibrary).catch(console.error);
+         
+        trpcClient.screens.list.query().then(setScreens).catch(console.error);
     }, []);
 
     const handleRadioChange = (screenId: string, src: string) => {
@@ -40,14 +43,16 @@ export default function Control() {
 
     const handlePresetClick = (preset: Preset) => {
         Object.entries(preset.screens).forEach(([screenId, src]) => {
-            setImage(screenId, src);
+            if (typeof src === 'string') {
+                setImage(screenId, src);
+            }
         });
     };
 
     const handleAssignContent = async (screenId: string, scenario: string, imagePath: string) => {
         try {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await (trpcClient.scenarios as any).set.mutate({ screenId, scenario, imagePath });
+             
+            await trpcClient.scenarios.set.mutate({ screenId, scenario, imagePath });
 
             // Update local state
             setScenarioAssignments(prev => ({
@@ -62,6 +67,49 @@ export default function Control() {
             setEditingScenario(null);
         } catch (error) {
             console.error("Failed to assign content:", error);
+        }
+    };
+
+    const handleRenameScenario = (oldName: string, newName: string) => {
+        if (!newName.trim() || newName === oldName) {
+            setRenamingScenario(null);
+            setNewScenarioName("");
+            return;
+        }
+
+        // Update scenarios list
+        setScenarios(prev => prev.map(s => s === oldName ? newName : s));
+
+        // Update scenario assignments to use new name
+        setScenarioAssignments(prev => {
+            const updated: ScenarioAssignments = {};
+            Object.entries(prev).forEach(([screenId, assignments]) => {
+                updated[screenId] = {};
+                Object.entries(assignments).forEach(([scenario, path]) => {
+                    const key = scenario === oldName ? newName : scenario;
+                    updated[screenId][key] = path;
+                });
+            });
+            return updated;
+        });
+
+        // Persist to backend for each screen
+        Object.entries(scenarioAssignments).forEach(([screenId, assignments]) => {
+            const imagePath = assignments[oldName];
+            if (imagePath) {
+                // Remove old scenario assignment and add new one
+                 
+                trpcClient.scenarios.set.mutate({ screenId, scenario: newName, imagePath }).catch(console.error);
+            }
+        });
+
+        setRenamingScenario(null);
+        setNewScenarioName("");
+    };
+
+    const handleRowClick = (screenId: string, imagePath: string | undefined) => {
+        if (imagePath) {
+            handleRadioChange(screenId, imagePath);
         }
     };
 
@@ -120,9 +168,11 @@ export default function Control() {
                                             </label>
                                         </div>
                                     </div>
-                                    {SCENARIOS.map((scenario) => {
+                                    {scenarios.map((scenario) => {
                                         const imagePath = getScenarioPath(screen.id, scenario);
                                         const isEditing = editingScreen === screen.id && editingScenario === scenario;
+                                        const isRenaming = renamingScenario === scenario;
+                                        const isSelected = !!imagePath && screenStates[screen.id]?.src === imagePath;
 
                                         return (
                                             <div key={scenario} className="scenario-row">
@@ -147,21 +197,54 @@ export default function Control() {
                                                         </select>
                                                     </div>
                                                 ) : (
-                                                    <div className="radio-option">
-                                                        <label className="radio-label">
+                                                    <div
+                                                        className={`radio-option clickable-row ${isSelected ? 'selected' : ''} ${!imagePath ? 'disabled' : ''}`}
+                                                        onClick={() => handleRowClick(screen.id, imagePath)}
+                                                    >
+                                                        <input
+                                                            type="radio"
+                                                            name={screen.id}
+                                                            value={imagePath || ""}
+                                                            checked={isSelected}
+                                                            onChange={() => { }}
+                                                            disabled={!imagePath}
+                                                        />
+                                                        {isRenaming ? (
                                                             <input
-                                                                type="radio"
-                                                                name={screen.id}
-                                                                value={imagePath || ""}
-                                                                checked={!!imagePath && screenStates[screen.id]?.src === imagePath}
-                                                                onChange={() => imagePath && handleRadioChange(screen.id, imagePath)}
-                                                                disabled={!imagePath}
+                                                                type="text"
+                                                                className="scenario-rename-input"
+                                                                value={newScenarioName}
+                                                                onChange={(e) => setNewScenarioName(e.target.value)}
+                                                                onBlur={() => handleRenameScenario(scenario, newScenarioName)}
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === 'Enter') {
+                                                                        handleRenameScenario(scenario, newScenarioName);
+                                                                    } else if (e.key === 'Escape') {
+                                                                        setRenamingScenario(null);
+                                                                        setNewScenarioName("");
+                                                                    }
+                                                                }}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                autoFocus
                                                             />
+                                                        ) : (
                                                             <span className="scenario-name">{scenario}</span>
-                                                        </label>
+                                                        )}
+                                                        <button
+                                                            className="rename-btn"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setRenamingScenario(scenario);
+                                                                setNewScenarioName(scenario);
+                                                            }}
+                                                            title="Hernoem scene"
+                                                        >
+                                                            ✎
+                                                        </button>
                                                         <button
                                                             className="edit-btn"
-                                                            onClick={() => {
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
                                                                 setEditingScreen(screen.id);
                                                                 setEditingScenario(scenario);
                                                             }}

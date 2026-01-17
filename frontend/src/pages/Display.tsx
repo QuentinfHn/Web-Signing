@@ -16,8 +16,8 @@ export default function Display() {
 
     // Fetch screens on mount
     useEffect(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (trpcClient.screens as any).getByDisplay.query({ displayId }).then(setScreens).catch(console.error);
+
+        trpcClient.screens.getByDisplay.query({ displayId }).then(setScreens).catch(console.error);
     }, [displayId]);
 
     const handleStateUpdate = useCallback((state: ScreenState) => {
@@ -93,7 +93,7 @@ export default function Display() {
                                 <img src={prevSrc} alt="" style={{ position: "absolute", opacity: 0, transition: `opacity ${FADE_TIME}ms` }} />
                             )}
                             {state?.src && (
-                                <img src={`${state.src}?t=${Date.now()}`} alt={screen.name || screen.id} style={{ opacity: 1, transition: `opacity ${FADE_TIME}ms` }} />
+                                <img src={state.src} alt={screen.name || screen.id} style={{ opacity: 1, transition: `opacity ${FADE_TIME}ms` }} />
                             )}
                         </div>
                     );

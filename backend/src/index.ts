@@ -47,7 +47,7 @@ app.use("/content", express.static(contentPath));
 // Configure Multer for file uploads
 const storage = multer.diskStorage({
     destination: (req, _file, cb) => {
-        const category = (req.body?.category as string) || "shared";
+        const category = typeof req.body?.category === 'string' ? req.body.category : "shared";
         const uploadDir = path.join(contentPath, category);
 
         // Create directory if it doesn't exist
@@ -87,7 +87,7 @@ app.post("/api/upload", upload.single("file"), async (req, res) => {
             return;
         }
 
-        const category = (req.body?.category as string) || "shared";
+        const category = typeof req.body?.category === 'string' ? req.body.category : "shared";
         const relativePath = `/content/${category}/${req.file.filename}`;
 
         // Save to database

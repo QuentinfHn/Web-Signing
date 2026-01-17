@@ -335,6 +335,66 @@ body {
   opacity: 1;
 }
 
+/* Clickable row styling */
+.clickable-row {
+  cursor: pointer;
+  user-select: none;
+}
+
+.clickable-row.selected {
+  background: rgba(59, 130, 246, 0.2);
+  border-left: 3px solid var(--accent);
+}
+
+.clickable-row.disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.clickable-row:not(.disabled):hover {
+  background: var(--bg-card-hover);
+}
+
+/* Rename button */
+.rename-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+  margin-left: auto;
+}
+
+.radio-option:hover .rename-btn,
+.rename-btn:focus {
+  opacity: 1;
+}
+
+/* Scenario rename input */
+.scenario-rename-input {
+  flex: 1;
+  padding: 0.25rem 0.5rem;
+  background: var(--bg-dark);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  min-width: 80px;
+}
+
+.scenario-rename-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+}
+
+/* Make scenario name take available space */
+.radio-option .scenario-name {
+  flex: 1;
+}
+
 .assigned-content {
   color: var(--success);
   font-size: 0.8rem;

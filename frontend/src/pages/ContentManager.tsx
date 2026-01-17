@@ -16,10 +16,10 @@ export default function ContentManager() {
     const loadContent = useCallback(async () => {
         try {
             const [contentList, categoryList] = await Promise.all([
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                (trpcClient.content as any).list.query({ category: selectedCategory }),
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                (trpcClient.content as any).getCategories.query(),
+                 
+                trpcClient.content.list.query({ category: selectedCategory }),
+                 
+                trpcClient.content.getCategories.query(),
             ]);
             setContents(contentList);
             setCategories(["shared", ...categoryList.filter((c: string) => c !== "shared")]);
@@ -96,8 +96,8 @@ export default function ContentManager() {
         }
 
         try {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await (trpcClient.content as any).delete.mutate({ id: content.id });
+             
+            await trpcClient.content.delete.mutate({ id: content.id });
             await loadContent();
         } catch (error) {
             console.error("Delete error:", error);

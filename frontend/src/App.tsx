@@ -13,8 +13,8 @@ function Home() {
     useEffect(() => {
         const loadDisplays = async () => {
             try {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const data = await (trpcClient.displays as any).list.query();
+                 
+                const data = await trpcClient.displays.list.query();
                 setDisplays(data);
             } catch (error) {
                 console.error("Failed to load displays:", error);
