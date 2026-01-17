@@ -1383,3 +1383,307 @@ body {
     margin-bottom: 0;
   }
 }
+
+/* Screen Create Modal */
+.screen-create-modal {
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%);
+  border: 1px solid var(--accent);
+  border-radius: 16px;
+  margin-bottom: 1rem;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(59, 130, 246, 0.15), 0 0 0 1px rgba(59, 130, 246, 0.1);
+}
+
+.screen-create-modal .modal-header {
+  padding: 1rem 1.25rem;
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.15) 0%, transparent 100%);
+  border-bottom: 1px solid var(--border);
+}
+
+.screen-create-modal .modal-header h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.screen-create-modal .modal-content {
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.screen-create-modal .form-section {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.screen-create-modal .form-section h4 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem 0;
+  color: var(--accent);
+}
+
+.screen-create-modal .section-help {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin: 0 0 0.75rem 0;
+}
+
+.screen-create-modal .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.screen-create-modal .form-group label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.screen-create-modal .form-group input {
+  padding: 0.6rem 0.75rem;
+  background: var(--bg-dark);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.screen-create-modal .form-group input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.screen-create-modal .form-group input::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.5;
+}
+
+.screen-create-modal .form-grid-2x2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+/* Location Mode Toggle */
+.location-mode-toggle {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.location-mode-toggle .mode-btn {
+  flex: 1;
+  padding: 0.6rem 0.75rem;
+  background: var(--bg-dark);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.location-mode-toggle .mode-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.location-mode-toggle .mode-btn.active {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+/* Form Row Inline */
+.form-row-inline {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.form-row-inline .flex-1 {
+  flex: 1;
+}
+
+.form-row-inline .flex-half {
+  flex: 0.5;
+}
+
+/* Geocode Button */
+.btn-geocode {
+  padding: 0.6rem 1rem;
+  background: linear-gradient(135deg, var(--accent) 0%, #6366f1 100%);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-geocode:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+}
+
+.btn-geocode:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Location Result */
+.location-result {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.location-result .result-icon {
+  color: var(--success);
+  font-weight: bold;
+}
+
+.location-result .result-text {
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.location-result.coords {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+/* Modal Footer */
+.screen-create-modal .modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-top: 1px solid var(--border);
+}
+
+.screen-create-modal .btn-secondary {
+  padding: 0.6rem 1.25rem;
+}
+
+.screen-create-modal .btn-create {
+  padding: 0.6rem 1.5rem;
+  background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+  font-weight: 600;
+}
+
+.screen-create-modal .btn-create:hover {
+  background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+}
+
+/* Cancel button style */
+.btn-cancel {
+  background: rgba(239, 68, 68, 0.5) !important;
+}
+
+.btn-cancel:hover {
+  background: rgba(239, 68, 68, 0.7) !important;
+}
+
+/* Input uppercase for postcode */
+.input-uppercase {
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Location forms */
+.location-address-form,
+.location-coords-form {
+  margin-top: 0.5rem;
+}
+
+/* Edit Modal Specific Styles */
+.screen-edit-modal .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.screen-edit-modal .edit-screen-id {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: var(--bg-dark);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.screen-edit-modal .modal-footer {
+  justify-content: space-between;
+}
+
+.screen-edit-modal .footer-right {
+  display: flex;
+  gap: 0.75rem;
+}
+
+/* Danger Button */
+.btn-danger {
+  padding: 0.6rem 1rem;
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 8px;
+  color: #f87171;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.btn-danger:hover {
+  background: rgba(239, 68, 68, 0.3);
+  border-color: rgba(239, 68, 68, 0.6);
+}
+
+/* Save Edit Button */
+.btn-save-edit {
+  padding: 0.6rem 1.5rem;
+  background: linear-gradient(135deg, var(--accent) 0%, #6366f1 100%);
+  font-weight: 600;
+}
+
+.btn-save-edit:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+}
+
+/* Edit Button Icon */
+.btn-icon.btn-edit {
+  color: var(--accent);
+}
+
+.btn-icon.btn-edit:hover {
+  background: rgba(59, 130, 246, 0.2);
+}
+
+/* Selected Row in Table */
+.screen-table tbody tr.selected-row {
+  background: rgba(59, 130, 246, 0.15);
+  border-left: 3px solid var(--accent);
+}
