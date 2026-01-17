@@ -4,7 +4,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./content:/app/content:ro
+      - ./content:/app/content
       - led-data:/app/data
     environment:
       - DATABASE_URL=file:/app/data/led.db
