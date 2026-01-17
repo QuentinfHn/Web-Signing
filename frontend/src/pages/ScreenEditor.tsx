@@ -46,6 +46,14 @@ export default function ScreenEditor() {
     // Selected display for viewing
     const [selectedDisplayId, setSelectedDisplayId] = useState<string | null>(null);
 
+    // Delete confirmation dialog
+    const [deleteConfirm, setDeleteConfirm] = useState<{
+        show: boolean;
+        type: "screen" | "display";
+        id: string;
+        name: string;
+    } | null>(null);
+
     // Fetch displays and screens on mount
     useEffect(() => {
         loadDisplays();
@@ -117,8 +125,11 @@ export default function ScreenEditor() {
         }
     };
 
+    const showDeleteDisplayConfirm = (id: string, name: string) => {
+        setDeleteConfirm({ show: true, type: "display", id, name: name || id });
+    };
+
     const handleDeleteDisplay = async (id: string) => {
-        if (!confirm(`Weet je zeker dat je display "${id}" wilt verwijderen?`)) return;
         try {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             await (trpcClient.displays as any).delete.mutate({ id });
@@ -209,16 +220,30 @@ export default function ScreenEditor() {
         }
     };
 
+    const showDeleteScreenConfirm = (id: string, name: string) => {
+        setDeleteConfirm({ show: true, type: "screen", id, name: name || id });
+    };
+
     const handleDelete = async (id: string) => {
-        if (!confirm("Weet je zeker dat je dit scherm wilt verwijderen?")) return;
         try {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             await (trpcClient.screens as any).delete.mutate({ id });
+            setEditingId(null);
             await loadScreens();
             await loadDisplays();
         } catch (error) {
             console.error("Failed to delete screen:", error);
         }
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!deleteConfirm) return;
+        if (deleteConfirm.type === "display") {
+            await handleDeleteDisplay(deleteConfirm.id);
+        } else {
+            await handleDelete(deleteConfirm.id);
+        }
+        setDeleteConfirm(null);
     };
 
     const handleCreate = async () => {
@@ -409,7 +434,7 @@ export default function ScreenEditor() {
                                 <span className="display-count">{display._count?.screens || 0}</span>
                                 <button
                                     className="btn-icon btn-delete"
-                                    onClick={(e) => { e.stopPropagation(); handleDeleteDisplay(display.id); }}
+                                    onClick={(e) => { e.stopPropagation(); showDeleteDisplayConfirm(display.id, display.name || ""); }}
                                     title="Verwijderen"
                                 >
                                     x
@@ -838,7 +863,7 @@ export default function ScreenEditor() {
                                         <button
                                             type="button"
                                             className="btn-danger"
-                                            onClick={() => handleDelete(editingId)}
+                                            onClick={() => showDeleteScreenConfirm(editingId, formData.name || editingId)}
                                         >
                                             🗑️ Verwijderen
                                         </button>
@@ -902,7 +927,7 @@ export default function ScreenEditor() {
                                                 </button>
                                                 <button
                                                     className="btn-icon btn-delete"
-                                                    onClick={(e) => { e.stopPropagation(); handleDelete(screen.id); }}
+                                                    onClick={(e) => { e.stopPropagation(); showDeleteScreenConfirm(screen.id, screen.name || screen.id); }}
                                                     title="Verwijderen"
                                                 >
                                                     x
@@ -922,6 +947,39 @@ export default function ScreenEditor() {
                     )}
                 </section>
             </div>
+
+            {/* Delete Confirmation Modal */}
+            {deleteConfirm?.show && (
+                <div className="confirm-overlay" onClick={() => setDeleteConfirm(null)}>
+                    <div className="confirm-dialog" onClick={(e) => e.stopPropagation()}>
+                        <div className="confirm-icon">⚠️</div>
+                        <h3>Verwijderen bevestigen</h3>
+                        <p>
+                            Weet je zeker dat je {deleteConfirm.type === "display" ? "display" : "scherm"}{" "}
+                            <strong>"{deleteConfirm.name}"</strong> wilt verwijderen?
+                        </p>
+                        {deleteConfirm.type === "display" && (
+                            <p className="confirm-warning">
+                                ⚠️ Alle schermen in deze display worden ook verwijderd!
+                            </p>
+                        )}
+                        <div className="confirm-buttons">
+                            <button
+                                className="btn-secondary"
+                                onClick={() => setDeleteConfirm(null)}
+                            >
+                                Annuleren
+                            </button>
+                            <button
+                                className="btn-danger"
+                                onClick={handleConfirmDelete}
+                            >
+                                Verwijderen
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
