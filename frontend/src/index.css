@@ -681,6 +681,67 @@ body {
   background: rgba(239, 68, 68, 0.2);
 }
 
+.content-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.rename-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+  font-size: 1rem;
+}
+
+.rename-btn:hover {
+  background: rgba(99, 102, 241, 0.2);
+}
+
+/* Rename Dialog */
+.rename-dialog {
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  border-radius: 16px;
+  padding: 1.5rem;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(99, 102, 241, 0.15), 0 0 0 1px rgba(99, 102, 241, 0.1);
+  animation: scaleIn 0.2s ease-out;
+}
+
+.rename-dialog h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  color: var(--text-primary);
+}
+
+.rename-dialog p {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  margin: 0 0 1rem 0;
+}
+
+.rename-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 8px;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.rename-input:focus {
+  border-color: rgba(99, 102, 241, 0.6);
+}
+
 /* Screen Editor */
 .screen-editor {
   padding: 2rem;
@@ -1889,6 +1950,7 @@ body {
   width: 90%;
   max-width: 400px;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+  overflow: visible;
 }
 
 .modal-content.modal-content-wide {
@@ -1904,6 +1966,7 @@ body {
 
 .form-group {
   margin-bottom: 1rem;
+  overflow: visible;
 }
 
 .form-group label {
@@ -2069,8 +2132,8 @@ body {
   border: 1px solid var(--border);
   border-radius: 12px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
-  z-index: 1000;
-  max-height: 420px;
+  z-index: 2000;
+  max-height: 350px;
   display: flex;
   flex-direction: column;
   overflow: hidden;

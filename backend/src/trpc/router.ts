@@ -370,6 +370,62 @@ export const contentRouter = router({
             orderBy: { filename: "asc" },
         });
     }),
+
+    rename: publicProcedure
+        .input(z.object({ id: z.string(), newFilename: z.string().min(1) }))
+        .mutation(async ({ input }) => {
+            const content = await prisma.content.findUnique({
+                where: { id: input.id },
+            });
+            if (!content) throw new Error("Content not found");
+
+            const fs = await import("fs/promises");
+            const path = await import("path");
+
+            // Get the actual filename from the path (not content.filename which is display name)
+            const oldFilePath = path.join(process.cwd(), "..", content.path);
+            const dir = path.dirname(oldFilePath);
+            const oldDiskFilename = path.basename(content.path);
+            const ext = path.extname(oldDiskFilename);
+
+            // Ensure new filename has the same extension
+            let newFilename = input.newFilename;
+            if (!newFilename.toLowerCase().endsWith(ext.toLowerCase())) {
+                newFilename += ext;
+            }
+
+            const newFilePath = path.join(dir, newFilename);
+            // Replace the old disk filename with the new filename in the path
+            const newPath = content.path.replace(oldDiskFilename, newFilename);
+
+            // Check if target file already exists
+            try {
+                await fs.access(newFilePath);
+                // File exists on disk - check if it has a database record
+                const existingDbRecord = await prisma.content.findFirst({
+                    where: { path: newPath },
+                });
+                if (existingDbRecord) {
+                    // File exists and has a DB record - cannot overwrite
+                    throw new Error("Een bestand met deze naam bestaat al");
+                }
+                // File exists but no DB record - it's an orphan, delete it
+                await fs.unlink(newFilePath);
+            } catch (err) {
+                if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
+                    throw err;
+                }
+            }
+
+            // Rename file on disk
+            await fs.rename(oldFilePath, newFilePath);
+
+            // Update database
+            return prisma.content.update({
+                where: { id: input.id },
+                data: { filename: newFilename, path: newPath },
+            });
+        }),
 });
 
 // Scenarios router - manage scenario-content assignments

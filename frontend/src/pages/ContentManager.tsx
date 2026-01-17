@@ -11,6 +11,7 @@ export default function ContentManager() {
     const [selectedCategory, setSelectedCategory] = useState<string>("shared");
     const [isDragging, setIsDragging] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const [renameModal, setRenameModal] = useState<{ content: Content; newName: string } | null>(null);
 
     // Fetch categories and content
     const loadContent = useCallback(async () => {
@@ -96,12 +97,48 @@ export default function ContentManager() {
         }
 
         try {
-             
+
             await trpcClient.content.delete.mutate({ id: content.id });
             await loadContent();
         } catch (error) {
             console.error("Delete error:", error);
             alert("Verwijderen mislukt");
+        }
+    };
+
+    // Open rename modal
+    const handleRename = (content: Content) => {
+        const ext = content.filename.lastIndexOf(".") > 0
+            ? content.filename.substring(content.filename.lastIndexOf("."))
+            : "";
+        const nameWithoutExt = content.filename.replace(ext, "");
+        setRenameModal({ content, newName: nameWithoutExt });
+    };
+
+    // Submit rename
+    const submitRename = async () => {
+        if (!renameModal) return;
+
+        const ext = renameModal.content.filename.lastIndexOf(".") > 0
+            ? renameModal.content.filename.substring(renameModal.content.filename.lastIndexOf("."))
+            : "";
+        const originalName = renameModal.content.filename.replace(ext, "");
+
+        if (!renameModal.newName || renameModal.newName === originalName) {
+            setRenameModal(null);
+            return;
+        }
+
+        try {
+            await trpcClient.content.rename.mutate({
+                id: renameModal.content.id,
+                newFilename: renameModal.newName,
+            });
+            setRenameModal(null);
+            await loadContent();
+        } catch (error) {
+            console.error("Rename error:", error);
+            alert(error instanceof Error ? error.message : "Hernoemen mislukt");
         }
     };
 
@@ -178,18 +215,63 @@ export default function ContentManager() {
                             )}
                             <div className="content-info">
                                 <span className="filename">{content.filename}</span>
-                                <button
-                                    className="delete-btn"
-                                    onClick={() => handleDelete(content)}
-                                    title="Verwijderen"
-                                >
-                                    🗑️
-                                </button>
+                                <div className="content-actions">
+                                    <button
+                                        className="rename-btn"
+                                        onClick={() => handleRename(content)}
+                                        title="Hernoemen"
+                                    >
+                                        ✏️
+                                    </button>
+                                    <button
+                                        className="delete-btn"
+                                        onClick={() => handleDelete(content)}
+                                        title="Verwijderen"
+                                    >
+                                        🗑️
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     ))
                 )}
             </div>
+
+            {/* Rename Modal */}
+            {renameModal && (
+                <div className="confirm-overlay" onClick={() => setRenameModal(null)}>
+                    <div className="rename-dialog" onClick={(e) => e.stopPropagation()}>
+                        <div className="confirm-icon">✏️</div>
+                        <h3>Bestand hernoemen</h3>
+                        <p>Voer een nieuwe naam in voor dit bestand:</p>
+                        <input
+                            type="text"
+                            className="rename-input"
+                            value={renameModal.newName}
+                            onChange={(e) => setRenameModal({ ...renameModal, newName: e.target.value })}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter") submitRename();
+                                if (e.key === "Escape") setRenameModal(null);
+                            }}
+                            autoFocus
+                        />
+                        <div className="confirm-buttons">
+                            <button
+                                className="btn-secondary"
+                                onClick={() => setRenameModal(null)}
+                            >
+                                Annuleren
+                            </button>
+                            <button
+                                className="btn-primary"
+                                onClick={submitRename}
+                            >
+                                Hernoemen
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
