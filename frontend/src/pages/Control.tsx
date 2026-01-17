@@ -88,14 +88,13 @@ export default function Control() {
     return (
         <div className="control-page">
             <header>
-                <h1>
-                    🎮 LED Control
+                <h1>Control Panel</h1>
+                <div className="header-actions">
                     <span className={`connection-status ${connected ? "connected" : "disconnected"}`}>
-                        {connected ? "🟢 Verbonden" : "🔴 Niet verbonden"}
+                        {connected ? "Verbonden" : "Niet verbonden"}
                     </span>
-                </h1>
-                <Link to="/content" className="header-link">📁 Content Manager</Link>
-                <Link to="/screens" className="header-link">📐 Screen Editor</Link>
+                    <Link to="/" className="back-link">Terug</Link>
+                </div>
             </header>
 
             {Object.entries(screensByDisplay).map(([displayId, displayScreens]) => (

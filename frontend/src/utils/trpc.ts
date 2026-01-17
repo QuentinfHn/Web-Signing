@@ -11,6 +11,12 @@ export const trpcClient = createTRPCClient<any>({
 });
 
 // Types for use in components
+export type Display = {
+    id: string;
+    name: string | null;
+    _count?: { screens: number };
+};
+
 export type Screen = {
     id: string;
     displayId: string;
@@ -21,6 +27,7 @@ export type Screen = {
     name: string | null;
     lat: number | null;
     lng: number | null;
+    address: string | null;
 };
 
 export type Preset = {

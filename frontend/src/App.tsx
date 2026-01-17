@@ -1,31 +1,61 @@
+import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import Control from "./pages/Control";
 import Display from "./pages/Display";
 import ContentManager from "./pages/ContentManager";
 import ScreenEditor from "./pages/ScreenEditor";
+import MapOverview from "./pages/MapOverview";
+import { trpcClient, Display as DisplayType } from "./utils/trpc";
 
 function Home() {
+    const [displays, setDisplays] = useState<DisplayType[]>([]);
+
+    useEffect(() => {
+        const loadDisplays = async () => {
+            try {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const data = await (trpcClient.displays as any).list.query();
+                setDisplays(data);
+            } catch (error) {
+                console.error("Failed to load displays:", error);
+            }
+        };
+        loadDisplays();
+    }, []);
+
     return (
         <div className="home">
-            <h1>🎮 LED Controller</h1>
             <p>Kies een pagina om te openen:</p>
             <nav className="nav-links">
                 <Link to="/control" className="nav-link">
-                    🕹️ Control Panel
+                    Control Panel
                 </Link>
                 <Link to="/content" className="nav-link">
-                    📁 Content Manager
+                    Content Manager
                 </Link>
                 <Link to="/screens" className="nav-link">
-                    📐 Screen Editor
+                    Screen Editor
                 </Link>
-                <Link to="/display?display=display1" className="nav-link">
-                    📺 Display 1
-                </Link>
-                <Link to="/display?display=display2" className="nav-link">
-                    📺 Display 2
+                <Link to="/map" className="nav-link">
+                    Map Overview
                 </Link>
             </nav>
+            {displays.length > 0 && (
+                <>
+                    <p className="section-label">Displays:</p>
+                    <nav className="nav-links">
+                        {displays.map(display => (
+                            <Link
+                                key={display.id}
+                                to={`/display?display=${display.id}`}
+                                className="nav-link display-link"
+                            >
+                                {display.name || display.id}
+                            </Link>
+                        ))}
+                    </nav>
+                </>
+            )}
         </div>
     );
 }
@@ -38,6 +68,7 @@ export default function App() {
                 <Route path="/control" element={<Control />} />
                 <Route path="/content" element={<ContentManager />} />
                 <Route path="/screens" element={<ScreenEditor />} />
+                <Route path="/map" element={<MapOverview />} />
                 <Route path="/display" element={<Display />} />
             </Routes>
         </BrowserRouter>

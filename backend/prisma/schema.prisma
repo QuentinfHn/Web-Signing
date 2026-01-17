@@ -7,8 +7,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Display {
+  id      String   @id
+  name    String?
+  screens Screen[]
+}
+
 model Screen {
-  id        String  @id
+  id        String   @id
   displayId String
   x         Int
   y         Int
@@ -17,6 +23,8 @@ model Screen {
   name      String?
   lat       Float?
   lng       Float?
+  address   String?
+  display   Display  @relation(fields: [displayId], references: [id])
 
   @@index([displayId])
 }

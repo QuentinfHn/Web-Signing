@@ -7,6 +7,76 @@ const t = initTRPC.create();
 export const router = t.router;
 export const publicProcedure = t.procedure;
 
+// Display router
+export const displayRouter = router({
+    list: publicProcedure.query(async () => {
+        return prisma.display.findMany({
+            orderBy: { id: "asc" },
+            include: { _count: { select: { screens: true } } },
+        });
+    }),
+
+    create: publicProcedure
+        .input(z.object({
+            id: z.string().min(1),
+            name: z.string().optional(),
+        }))
+        .mutation(async ({ input }) => {
+            return prisma.display.create({
+                data: { id: input.id, name: input.name ?? null },
+            });
+        }),
+
+    update: publicProcedure
+        .input(z.object({
+            id: z.string(),
+            name: z.string().optional(),
+        }))
+        .mutation(async ({ input }) => {
+            const { id, ...data } = input;
+            return prisma.display.update({
+                where: { id },
+                data,
+            });
+        }),
+
+    delete: publicProcedure
+        .input(z.object({ id: z.string() }))
+        .mutation(async ({ input }) => {
+            // Check if display has screens
+            const screenCount = await prisma.screen.count({
+                where: { displayId: input.id },
+            });
+            if (screenCount > 0) {
+                throw new Error(`Kan display niet verwijderen: ${screenCount} scherm(en) gekoppeld`);
+            }
+            await prisma.display.delete({ where: { id: input.id } });
+            return { success: true };
+        }),
+
+    // Initialize displays from existing screens (one-time migration helper)
+    initFromScreens: publicProcedure.mutation(async () => {
+        const screens = await prisma.screen.findMany({
+            select: { displayId: true },
+            distinct: ["displayId"],
+        });
+
+        let created = 0;
+        for (const screen of screens) {
+            const exists = await prisma.display.findUnique({
+                where: { id: screen.displayId },
+            });
+            if (!exists) {
+                await prisma.display.create({
+                    data: { id: screen.displayId, name: screen.displayId },
+                });
+                created++;
+            }
+        }
+        return { created };
+    }),
+});
+
 // Screen router
 export const screenRouter = router({
     list: publicProcedure.query(async () => {
@@ -33,6 +103,9 @@ export const screenRouter = router({
             height: z.number().optional(),
             name: z.string().optional(),
             displayId: z.string().optional(),
+            lat: z.number().optional().nullable(), // Allow null to clear
+            lng: z.number().optional().nullable(),
+            address: z.string().optional().nullable(),
         }))
         .mutation(async ({ input }) => {
             const { id, ...data } = input;
@@ -44,16 +117,20 @@ export const screenRouter = router({
 
     create: publicProcedure
         .input(z.object({
-            id: z.string(),
             displayId: z.string(),
             x: z.number(),
             y: z.number(),
             width: z.number(),
             height: z.number(),
             name: z.string().optional(),
+            lat: z.number().optional(),
+            lng: z.number().optional(),
+            address: z.string().optional(),
         }))
         .mutation(async ({ input }) => {
-            return prisma.screen.create({ data: input });
+            // Generate a unique ID using timestamp + random suffix
+            const id = `scr_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+            return prisma.screen.create({ data: { id, ...input } });
         }),
 
     delete: publicProcedure
@@ -61,6 +138,108 @@ export const screenRouter = router({
         .mutation(async ({ input }) => {
             await prisma.screen.delete({ where: { id: input.id } });
             return { success: true };
+        }),
+
+    exportAll: publicProcedure.query(async () => {
+        const screens = await prisma.screen.findMany({
+            orderBy: { id: "asc" },
+        });
+        return {
+            version: "1.0",
+            exportedAt: new Date().toISOString(),
+            screens: screens.map(s => ({
+                id: s.id,
+                displayId: s.displayId,
+                name: s.name,
+                x: s.x,
+                y: s.y,
+                width: s.width,
+                height: s.height,
+                lat: s.lat,
+                lng: s.lng,
+                address: s.address,
+            })),
+        };
+    }),
+
+    importScreens: publicProcedure
+        .input(z.object({
+            screens: z.array(z.object({
+                id: z.string(),
+                displayId: z.string(),
+                name: z.string().nullable().optional(),
+                x: z.number(),
+                y: z.number(),
+                width: z.number(),
+                height: z.number(),
+                lat: z.number().nullable().optional(),
+                lng: z.number().nullable().optional(),
+                address: z.string().nullable().optional(),
+            })),
+            conflictMode: z.enum(["update", "skip", "error"]).default("update"),
+        }))
+        .mutation(async ({ input }) => {
+            const results = {
+                created: 0,
+                updated: 0,
+                skipped: 0,
+                errors: [] as string[],
+            };
+
+            for (const screen of input.screens) {
+                try {
+                    const existing = await prisma.screen.findUnique({
+                        where: { id: screen.id },
+                    });
+
+                    if (existing) {
+                        if (input.conflictMode === "error") {
+                            results.errors.push(`Screen '${screen.id}' bestaat al`);
+                            continue;
+                        }
+                        if (input.conflictMode === "skip") {
+                            results.skipped++;
+                            continue;
+                        }
+                        // update mode
+                        await prisma.screen.update({
+                            where: { id: screen.id },
+                            data: {
+                                displayId: screen.displayId,
+                                name: screen.name ?? null,
+                                x: screen.x,
+                                y: screen.y,
+                                width: screen.width,
+                                height: screen.height,
+                                lat: screen.lat ?? null,
+                                lng: screen.lng ?? null,
+                                address: screen.address ?? null,
+                            },
+                        });
+                        results.updated++;
+                    } else {
+                        await prisma.screen.create({
+                            data: {
+                                id: screen.id,
+                                displayId: screen.displayId,
+                                name: screen.name ?? null,
+                                x: screen.x,
+                                y: screen.y,
+                                width: screen.width,
+                                height: screen.height,
+                                lat: screen.lat ?? null,
+                                lng: screen.lng ?? null,
+                                address: screen.address ?? null,
+                            },
+                        });
+                        results.created++;
+                    }
+                } catch (err) {
+                    results.errors.push(`Fout bij screen '${screen.id}': ${err instanceof Error ? err.message : String(err)}`);
+                }
+            }
+
+            return results;
         }),
 });
 
@@ -249,6 +428,7 @@ export const scenariosRouter = router({
 
 // Main app router
 export const appRouter = router({
+    displays: displayRouter,
     screens: screenRouter,
     presets: presetRouter,
     state: stateRouter,
