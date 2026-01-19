@@ -149,7 +149,7 @@ export const screenRouter = router({
         return {
             version: "1.0",
             exportedAt: new Date().toISOString(),
-            screens: screens.map(s => ({
+            screens: screens.map((s: { id: string; displayId: string; name: string | null; x: number; y: number; width: number; height: number; lat: number | null; lng: number | null; address: string | null }) => ({
                 id: s.id,
                 displayId: s.displayId,
                 name: s.name,
@@ -325,7 +325,16 @@ export const contentRouter = router({
             select: { category: true },
             distinct: ["category"],
         });
-        return contents.map((c) => c.category);
+        const categories = contents.map((c: { category: string }) => c.category);
+        // Return default category if no categories exist (clean install)
+        if (categories.length === 0) {
+            return ["Algemeen"];
+        }
+        // Ensure "Algemeen" is always available as a fallback category
+        if (!categories.includes("Algemeen")) {
+            return ["Algemeen", ...categories];
+        }
+        return categories;
     }),
 
     delete: publicProcedure
@@ -448,7 +457,7 @@ export const scenariosRouter = router({
             });
             // Return as a map: { scenario: imagePath }
             return Object.fromEntries(
-                assignments.map((a) => [a.scenario, a.imagePath])
+                assignments.map((a: { scenario: string; imagePath: string }) => [a.scenario, a.imagePath])
             );
         }),
 
