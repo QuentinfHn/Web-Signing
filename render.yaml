@@ -1,5 +1,6 @@
-# Render Blueprint
+# Render Blueprint - FREE TIER
 # Deploy with: https://render.com/deploy
+# Note: Database resets on restart (no persistent storage on free tier)
 
 services:
   # Backend API
@@ -8,6 +9,7 @@ services:
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
+    plan: free
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
@@ -15,23 +17,14 @@ services:
       - key: DATABASE_URL
         value: file:/app/data/led.db
       - key: FRONTEND_URL
-        sync: false  # Set manually after frontend deploys
-    disk:
-      name: led-data
-      mountPath: /app/data
-      sizeGB: 1
+        sync: false  # Set manually: https://led-signage-frontend.onrender.com
     autoDeploy: true
 
-  # Frontend (Static Site)
+  # Frontend
   - type: web
     name: led-signage-frontend
     runtime: docker
     dockerfilePath: ./frontend/Dockerfile
     dockerContext: ./frontend
-    envVars:
-      - key: VITE_API_URL
-        fromService:
-          type: web
-          name: led-signage-backend
-          property: host
+    plan: free
     autoDeploy: true
