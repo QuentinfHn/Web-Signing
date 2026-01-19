@@ -12,9 +12,16 @@ export interface WebSocketMessage {
     screens: ScreenState;
 }
 
+const MAX_RECONNECT_DELAY = 30000; // 30 seconds
+const INITIAL_RECONNECT_DELAY = 1000; // 1 second
+
 export function useWebSocket(onStateUpdate: (state: ScreenState) => void) {
     const wsRef = useRef<WebSocket | null>(null);
     const [connected, setConnected] = useState(false);
+    const [reconnecting, setReconnecting] = useState(false);
+    const reconnectDelayRef = useRef(INITIAL_RECONNECT_DELAY);
+    const reconnectTimeoutRef = useRef<number | null>(null);
+    const mountedRef = useRef(true);
 
     const savedCallback = useRef(onStateUpdate);
 
@@ -22,24 +29,31 @@ export function useWebSocket(onStateUpdate: (state: ScreenState) => void) {
         savedCallback.current = onStateUpdate;
     }, [onStateUpdate]);
 
-    useEffect(() => {
+    const getWsUrl = useCallback(() => {
         const apiUrl = import.meta.env.VITE_API_URL;
-        let wsUrl: string;
         if (apiUrl) {
             // Use configured API URL, convert http(s) to ws(s)
-            wsUrl = apiUrl.replace(/^http/, "ws") + "/ws";
+            return apiUrl.replace(/^http/, "ws") + "/ws";
         } else {
             // Fallback to same host (development with proxy)
             const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-            wsUrl = `${protocol}//${window.location.host}/ws`;
+            return `${protocol}//${window.location.host}/ws`;
         }
+    }, []);
 
+    const connect = useCallback(() => {
+        if (!mountedRef.current) return;
+
+        const wsUrl = getWsUrl();
         const ws = new WebSocket(wsUrl);
         wsRef.current = ws;
 
         ws.onopen = () => {
             console.log("WebSocket connected");
             setConnected(true);
+            setReconnecting(false);
+            // Reset reconnect delay on successful connection
+            reconnectDelayRef.current = INITIAL_RECONNECT_DELAY;
         };
 
         ws.onmessage = async (event) => {
@@ -62,16 +76,43 @@ export function useWebSocket(onStateUpdate: (state: ScreenState) => void) {
         ws.onclose = () => {
             console.log("WebSocket disconnected");
             setConnected(false);
+
+            if (mountedRef.current) {
+                // Schedule reconnection with exponential backoff
+                setReconnecting(true);
+                const delay = reconnectDelayRef.current;
+                console.log(`Reconnecting in ${delay / 1000}s...`);
+
+                reconnectTimeoutRef.current = window.setTimeout(() => {
+                    // Increase delay for next attempt (exponential backoff)
+                    reconnectDelayRef.current = Math.min(
+                        reconnectDelayRef.current * 2,
+                        MAX_RECONNECT_DELAY
+                    );
+                    connect();
+                }, delay);
+            }
         };
 
         ws.onerror = (error) => {
             console.error("WebSocket error:", error);
         };
+    }, [getWsUrl]);
+
+    useEffect(() => {
+        mountedRef.current = true;
+        connect();
 
         return () => {
-            ws.close();
+            mountedRef.current = false;
+            if (reconnectTimeoutRef.current !== null) {
+                clearTimeout(reconnectTimeoutRef.current);
+            }
+            if (wsRef.current) {
+                wsRef.current.close();
+            }
         };
-    }, []);
+    }, [connect]);
 
     const sendMessage = useCallback((type: string, data: Record<string, unknown>) => {
         if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -83,5 +124,5 @@ export function useWebSocket(onStateUpdate: (state: ScreenState) => void) {
         sendMessage("setImage", { screen, src });
     }, [sendMessage]);
 
-    return { connected, setImage };
+    return { connected, reconnecting, setImage };
 }
