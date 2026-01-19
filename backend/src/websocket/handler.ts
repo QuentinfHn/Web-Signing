@@ -1,12 +1,6 @@
 import { WebSocketServer, WebSocket } from "ws";
 import { prisma } from "../prisma/client.js";
-
-export interface ScreenStateMap {
-    [screenId: string]: {
-        src: string | null;
-        updated: Date;
-    };
-}
+import { setWebSocketServer, broadcastState, type ScreenStateMap } from "../services/screenState.js";
 
 const PING_INTERVAL = 30000; // 30 seconds
 
@@ -15,7 +9,8 @@ interface ExtendedWebSocket extends WebSocket {
 }
 
 export function createWebSocketHandler(wss: WebSocketServer) {
-    // Ping all clients periodically to keep connections alive
+    setWebSocketServer(wss);
+
     const pingInterval = setInterval(() => {
         wss.clients.forEach((ws) => {
             const extWs = ws as ExtendedWebSocket;
@@ -31,39 +26,16 @@ export function createWebSocketHandler(wss: WebSocketServer) {
     wss.on("close", () => {
         clearInterval(pingInterval);
     });
-    // Broadcast state to all connected clients
-    async function broadcastState() {
-        const states = await prisma.screenState.findMany();
-        const stateMap: ScreenStateMap = {};
-
-        for (const state of states) {
-            stateMap[state.screenId] = {
-                src: state.imageSrc,
-                updated: state.updatedAt,
-            };
-        }
-
-        const payload = JSON.stringify({
-            type: "state",
-            screens: stateMap,
-        });
-
-        wss.clients.forEach((client) => {
-            if (client.readyState === WebSocket.OPEN) {
-                client.send(payload);
-            }
-        });
-    }
 
     wss.on("connection", async (ws) => {
         const extWs = ws as ExtendedWebSocket;
         extWs.isAlive = true;
         console.log("New WebSocket connection");
 
-        // Handle pong responses from client
         extWs.on("pong", () => {
             extWs.isAlive = true;
         });
+
         const states = await prisma.screenState.findMany();
         const stateMap: ScreenStateMap = {};
 
@@ -92,7 +64,6 @@ export function createWebSocketHandler(wss: WebSocketServer) {
                         create: { screenId: data.screen, imageSrc: data.src },
                     });
 
-                    // Broadcast to all clients
                     await broadcastState();
                 }
             } catch (error) {
@@ -104,6 +75,4 @@ export function createWebSocketHandler(wss: WebSocketServer) {
             console.log("WebSocket connection closed");
         });
     });
-
-    return { broadcastState };
 }

@@ -14,6 +14,7 @@ import { logger } from "./utils/logger.js";
 import { initDefaultData } from "./startup/initDefaultData.js";
 import { verifyToken, isAuthEnabled } from "./auth/auth.js";
 import { uploadRateLimiter } from "./middleware/rateLimit.js";
+import companionRouter from "./routers/companion.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -82,7 +83,7 @@ createWebSocketHandler(wss);
 
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || process.env.FRONTEND_URL || "http://localhost:3000").split(",").map(o => o.trim());
 const ALLOWED_METHODS = ["GET", "POST", "OPTIONS", "PUT", "DELETE"];
-const ALLOWED_HEADERS = ["Content-Type", "Authorization"];
+const ALLOWED_HEADERS = ["Content-Type", "Authorization", "x-api-key"];
 
 function isOriginAllowed(origin: string | undefined): boolean {
     if (!origin) return false;
@@ -117,6 +118,9 @@ app.use(
         createContext: ({ req }) => createContext({ req }),
     })
 );
+
+// Companion API endpoints
+app.use("/api/companion", companionRouter);
 
 // Serve static content (images)
 const contentPath = path.join(__dirname, "../../content");
@@ -225,8 +229,23 @@ app.post("/api/upload", uploadRateLimiter, requireAuth, upload.single("file"), a
 });
 
 // Health check
-app.get("/health", (_req, res) => {
-    res.json({ status: "ok" });
+app.get("/health", async (_req, res) => {
+    try {
+        await prisma.$queryRaw`SELECT 1`;
+        res.json({
+            status: "healthy",
+            database: "connected",
+            timestamp: new Date().toISOString(),
+        });
+    } catch (error) {
+        logger.error("Health check failed:", error);
+        res.status(503).json({
+            status: "unhealthy",
+            database: "disconnected",
+            timestamp: new Date().toISOString(),
+            error: error instanceof Error ? error.message : "Unknown error",
+        });
+    }
 });
 
 const PORT = process.env.PORT || 8080;
