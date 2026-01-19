@@ -244,11 +244,16 @@ export const screenRouter = router({
             conflictMode: z.enum(["update", "skip", "error"]).default("update"),
         }))
         .mutation(async ({ input }) => {
-            const results = {
+            const results: {
+                created: number;
+                updated: number;
+                skipped: number;
+                errors: string[];
+            } = {
                 created: 0,
                 updated: 0,
                 skipped: 0,
-                errors: [] as string[],
+                errors: [],
             };
 
             for (const screen of input.screens) {
@@ -484,7 +489,8 @@ export const contentRouter = router({
                 // File exists but no DB record - it's an orphan, delete it
                 await fs.unlink(newFilePath);
             } catch (err) {
-                if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
+                const error = err as Error & { code?: string };
+                if (error.code !== "ENOENT") {
                     throw err;
                 }
             }

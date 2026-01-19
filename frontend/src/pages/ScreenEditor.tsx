@@ -370,7 +370,7 @@ export default function ScreenEditor() {
                         <div className="import-group">
                             <select
                                 value={conflictMode}
-                                onChange={(e) => setConflictMode(e.target.value as ConflictMode)}
+                                onChange={(e) => setConflictMode(e.target.value as unknown as ConflictMode)}
                                 className="select-small"
                             >
                                 <option value="update">Overschrijven</option>

@@ -41,6 +41,23 @@ export function useWebSocket(onStateUpdate: (state: ScreenState) => void) {
         }
     }, []);
 
+    const scheduleReconnect = useCallback(() => {
+        if (!mountedRef.current) return;
+
+        // Schedule reconnection with exponential backoff
+        setReconnecting(true);
+        const delay = reconnectDelayRef.current;
+        console.log(`Reconnecting in ${delay / 1000}s...`);
+
+        reconnectTimeoutRef.current = window.setTimeout(() => {
+            // Increase delay for next attempt (exponential backoff)
+            reconnectDelayRef.current = Math.min(
+                reconnectDelayRef.current * 2,
+                MAX_RECONNECT_DELAY
+            );
+        }, delay);
+    }, []);
+
     const connect = useCallback(() => {
         if (!mountedRef.current) return;
 
@@ -76,28 +93,13 @@ export function useWebSocket(onStateUpdate: (state: ScreenState) => void) {
         ws.onclose = () => {
             console.log("WebSocket disconnected");
             setConnected(false);
-
-            if (mountedRef.current) {
-                // Schedule reconnection with exponential backoff
-                setReconnecting(true);
-                const delay = reconnectDelayRef.current;
-                console.log(`Reconnecting in ${delay / 1000}s...`);
-
-                reconnectTimeoutRef.current = window.setTimeout(() => {
-                    // Increase delay for next attempt (exponential backoff)
-                    reconnectDelayRef.current = Math.min(
-                        reconnectDelayRef.current * 2,
-                        MAX_RECONNECT_DELAY
-                    );
-                    connect();
-                }, delay);
-            }
+            scheduleReconnect();
         };
 
         ws.onerror = (error) => {
             console.error("WebSocket error:", error);
         };
-    }, [getWsUrl]);
+    }, [getWsUrl, scheduleReconnect]);
 
     useEffect(() => {
         mountedRef.current = true;

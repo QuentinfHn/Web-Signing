@@ -149,7 +149,7 @@ export default function Display() {
                     const prevSrc = previousSrcs[screen.id];
 
                     const useFill = shouldUseFill(screen, screen.id);
-                    const objectFitStyle = useFill ? { objectFit: 'fill' as const } : {};
+                    const objectFitStyle: React.CSSProperties = useFill ? { objectFit: 'fill' } : {};
 
                     return (
                         <div

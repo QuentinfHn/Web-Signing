@@ -53,8 +53,11 @@ export function generateToken(): string {
  */
 export function verifyToken(token: string): JWTPayload | null {
     try {
-        const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
-        return decoded;
+        const decoded = jwt.verify(token, JWT_SECRET);
+        if (typeof decoded === 'object' && decoded !== null && 'authenticated' in decoded) {
+            return decoded as JWTPayload;
+        }
+        return null;
     } catch {
         return null;
     }

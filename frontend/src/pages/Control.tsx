@@ -171,13 +171,13 @@ export default function Control() {
     };
 
     // Group screens by displayId
-    const screensByDisplay = screens.reduce((acc, screen) => {
+    const screensByDisplay = screens.reduce<Record<string, Screen[]>>((acc, screen) => {
         if (!acc[screen.displayId]) {
             acc[screen.displayId] = [];
         }
         acc[screen.displayId].push(screen);
         return acc;
-    }, {} as Record<string, Screen[]>);
+    }, {});
 
     return (
         <div className="control-page">
