@@ -64,6 +64,7 @@ export async function initDefaultData(): Promise<void> {
             }
 
             // Copy bundled asset if target doesn't exist
+            let fileSize = 0;
             if (!fs.existsSync(targetPath)) {
                 // In Docker: assets folder is at /app/assets
                 // In dev: assets folder is at backend/assets
@@ -76,6 +77,12 @@ export async function initDefaultData(): Promise<void> {
                 }
             }
 
+            // Get the actual file size
+            if (fs.existsSync(targetPath)) {
+                const stats = fs.statSync(targetPath);
+                fileSize = stats.size;
+            }
+
             // Create default content record in database
             await prisma.content.create({
                 data: {
@@ -84,7 +91,7 @@ export async function initDefaultData(): Promise<void> {
                     path: defaultImagePath,
                     category: "default",
                     mimeType: "image/png",
-                    size: 0, // Size not critical for bundled asset
+                    size: fileSize,
                 },
             });
             logger.info("✅ Created default content image");
