@@ -5,6 +5,11 @@ import { useWebSocket, ScreenState } from "../utils/websocket";
 
 const FADE_TIME = 500;
 
+interface ImageSize {
+    width: number;
+    height: number;
+}
+
 export default function Display() {
     const [searchParams] = useSearchParams();
     const displayId = searchParams.get("display") || "display1";
@@ -13,6 +18,7 @@ export default function Display() {
     const [screenStates, setScreenStates] = useState<ScreenState>({});
     const [previousSrcs, setPreviousSrcs] = useState<Record<string, string>>({});
     const [fadingScreens, setFadingScreens] = useState<Set<string>>(new Set());
+    const [imageSizes, setImageSizes] = useState<Record<string, ImageSize>>({});
 
     // Fetch screens on mount
     useEffect(() => {
@@ -51,6 +57,20 @@ export default function Display() {
 
     const [scale, setScale] = useState(1);
 
+    const handleImageLoad = (screenId: string, e: React.SyntheticEvent<HTMLImageElement>) => {
+        const img = e.currentTarget;
+        setImageSizes(prev => ({
+            ...prev,
+            [screenId]: { width: img.naturalWidth, height: img.naturalHeight }
+        }));
+    };
+
+    const shouldUseFill = (screen: Screen, screenId: string): boolean => {
+        const imageSize = imageSizes[screenId];
+        if (!imageSize) return false;
+        return imageSize.width !== screen.width || imageSize.height !== screen.height;
+    };
+
     useEffect(() => {
         const updateScale = () => {
             const scaleX = window.innerWidth / 1920;
@@ -78,6 +98,9 @@ export default function Display() {
                     const isFading = fadingScreens.has(screen.id);
                     const prevSrc = previousSrcs[screen.id];
 
+                    const useFill = shouldUseFill(screen, screen.id);
+                    const objectFitStyle = useFill ? { objectFit: 'fill' as const } : {};
+
                     return (
                         <div
                             key={screen.id}
@@ -90,10 +113,15 @@ export default function Display() {
                             }}
                         >
                             {isFading && prevSrc && (
-                                <img src={prevSrc} alt="" style={{ position: "absolute", opacity: 0, transition: `opacity ${FADE_TIME}ms` }} />
+                                <img src={prevSrc} alt="" style={{ position: "absolute", opacity: 0, transition: `opacity ${FADE_TIME}ms`, ...objectFitStyle }} />
                             )}
                             {state?.src && (
-                                <img src={state.src} alt={screen.name || screen.id} style={{ opacity: 1, transition: `opacity ${FADE_TIME}ms` }} />
+                                <img
+                                    src={state.src}
+                                    alt={screen.name || screen.id}
+                                    style={{ opacity: 1, transition: `opacity ${FADE_TIME}ms`, ...objectFitStyle }}
+                                    onLoad={(e) => handleImageLoad(screen.id, e)}
+                                />
                             )}
                         </div>
                     );
