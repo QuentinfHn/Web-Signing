@@ -26,13 +26,27 @@ if [ ! -d "$ROOT_DIR/frontend/node_modules" ]; then
     npm --prefix "$ROOT_DIR/frontend" install
 fi
 
+# Helper function to check if port is in use
+port_in_use() {
+    local port=$1
+    if command -v lsof &>/dev/null; then
+        lsof -ti tcp:"$port" >/dev/null 2>&1
+    elif command -v powershell &>/dev/null; then
+        powershell -Command "Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue" >/dev/null 2>&1
+    elif command -v netstat &>/dev/null; then
+        netstat -an | grep -q ":$port.*LISTEN"
+    else
+        return 1
+    fi
+}
+
 # Check ports
-if lsof -ti tcp:8080 >/dev/null 2>&1; then
+if port_in_use 8080; then
     echo "Port 8080 already in use. Stop it first: ./scripts/dev-down.sh"
     exit 1
 fi
 
-if lsof -ti tcp:3000 >/dev/null 2>&1; then
+if port_in_use 3000; then
     echo "Port 3000 already in use. Stop it first: ./scripts/dev-down.sh"
     exit 1
 fi

@@ -24,7 +24,14 @@ if [ -f "$DEV_DIR/frontend.pid" ]; then
 fi
 
 # Force kill any remaining processes on the ports
-lsof -ti tcp:8080 | xargs kill -9 2>/dev/null || true
-lsof -ti tcp:3000 | xargs kill -9 2>/dev/null || true
+if command -v lsof &>/dev/null; then
+    # Unix/macOS
+    lsof -ti tcp:8080 | xargs kill -9 2>/dev/null || true
+    lsof -ti tcp:3000 | xargs kill -9 2>/dev/null || true
+elif command -v powershell &>/dev/null; then
+    # Windows (Git Bash / MINGW)
+    powershell -Command "Get-NetTCPConnection -LocalPort 8080 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id \$_.OwningProcess -Force -ErrorAction SilentlyContinue }" 2>/dev/null || true
+    powershell -Command "Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id \$_.OwningProcess -Force -ErrorAction SilentlyContinue }" 2>/dev/null || true
+fi
 
 echo "✅ Stopped!"
