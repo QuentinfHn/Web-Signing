@@ -17,7 +17,7 @@ services:
       - key: DATABASE_URL
         value: file:/app/data/led.db
       - key: FRONTEND_URL
-        sync: false  # Set manually: https://led-signage-frontend.onrender.com
+        value: https://led-signage-frontend.onrender.com
     autoDeploy: true
 
   # Frontend
