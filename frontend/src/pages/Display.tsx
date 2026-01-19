@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { trpcClient, Screen } from "../utils/trpc";
 import { useWebSocket, ScreenState } from "../utils/websocket";
 
@@ -11,8 +11,7 @@ interface ImageSize {
 }
 
 export default function Display() {
-    const [searchParams] = useSearchParams();
-    const displayId = searchParams.get("display") || "display1";
+    const { displayId = "display1" } = useParams<{ displayId: string }>();
 
     const [screens, setScreens] = useState<Screen[]>([]);
     const [screenStates, setScreenStates] = useState<ScreenState>({});

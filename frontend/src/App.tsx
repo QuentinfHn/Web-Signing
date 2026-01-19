@@ -47,7 +47,7 @@ function Home() {
                         {displays.map(display => (
                             <Link
                                 key={display.id}
-                                to={`/display?display=${display.id}`}
+                                to={`/display/${display.id}`}
                                 className="nav-link display-link"
                             >
                                 {display.name || display.id}
@@ -69,7 +69,7 @@ export default function App() {
                 <Route path="/content" element={<ContentManager />} />
                 <Route path="/screens" element={<ScreenEditor />} />
                 <Route path="/map" element={<MapOverview />} />
-                <Route path="/display" element={<Display />} />
+                <Route path="/display/:displayId" element={<Display />} />
             </Routes>
         </BrowserRouter>
     );
