@@ -49,12 +49,16 @@ export function useWebSocket(onStateUpdate: (state: ScreenState) => void) {
         const delay = reconnectDelayRef.current;
         console.log(`Reconnecting in ${delay / 1000}s...`);
 
+        // Increase delay for next attempt (exponential backoff)
+        reconnectDelayRef.current = Math.min(
+            reconnectDelayRef.current * 2,
+            MAX_RECONNECT_DELAY
+        );
+
         reconnectTimeoutRef.current = window.setTimeout(() => {
-            // Increase delay for next attempt (exponential backoff)
-            reconnectDelayRef.current = Math.min(
-                reconnectDelayRef.current * 2,
-                MAX_RECONNECT_DELAY
-            );
+            if (mountedRef.current) {
+                connect();
+            }
         }, delay);
     }, []);
 
