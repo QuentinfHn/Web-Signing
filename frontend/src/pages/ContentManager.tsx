@@ -19,13 +19,13 @@ export default function ContentManager() {
             const categoryList = await trpcClient.content.getCategories.query();
             const allCategories = categoryList.length > 0 ? categoryList : ["Algemeen"];
             setCategories(allCategories);
-            
+
             // Set default category if none selected
             const categoryToUse = selectedCategory || allCategories[0];
             if (!selectedCategory && allCategories[0]) {
                 setSelectedCategory(allCategories[0]);
             }
-            
+
             const contentList = await trpcClient.content.list.query({ category: categoryToUse });
             setContents(contentList);
         } catch (error) {
@@ -42,8 +42,9 @@ export default function ContentManager() {
         setUploading(true);
         try {
             const formData = new FormData();
-            formData.append("file", file);
+            // IMPORTANT: category must be appended BEFORE file for Multer to receive it in time
             formData.append("category", selectedCategory);
+            formData.append("file", file);
 
             const response = await fetch(`${API_BASE}/api/upload`, {
                 method: "POST",

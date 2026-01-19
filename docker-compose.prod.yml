@@ -1,0 +1,25 @@
+services:
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_started
+
+  backend:
+    ports: !override [] # Don't expose backend directly when using tunnel
+    environment:
+      - FRONTEND_URL=${FRONTEND_URL:-https://yourdomain.com}
+
+  frontend:
+    ports: !override [] # Don't expose frontend directly when using tunnel
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

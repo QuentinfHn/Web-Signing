@@ -9,6 +9,7 @@ import fs from "fs";
 import { appRouter } from "./trpc/router.js";
 import { createWebSocketHandler } from "./websocket/handler.js";
 import { prisma } from "./prisma/client.js";
+import { logger } from "./utils/logger.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,9 +21,10 @@ const wss = new WebSocketServer({ server });
 // Initialize WebSocket handler
 createWebSocketHandler(wss);
 
-// CORS for development
+// CORS
 app.use((_req, res, next) => {
-    res.setHeader("Access-Control-Allow-Origin", "*");
+    const origin = process.env.FRONTEND_URL || "http://localhost:3000";
+    res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
     if (_req.method === "OPTIONS") {
@@ -103,7 +105,7 @@ app.post("/api/upload", upload.single("file"), async (req, res) => {
 
         res.json({ success: true, content });
     } catch (error) {
-        console.error("Upload error:", error);
+        logger.error("Upload error:", error);
         res.status(500).json({ error: "Upload failed" });
     }
 });
@@ -116,7 +118,7 @@ app.get("/health", (_req, res) => {
 const PORT = process.env.PORT || 8080;
 
 server.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-    console.log(`📡 WebSocket server ready`);
-    console.log(`🔌 tRPC endpoint: http://localhost:${PORT}/trpc`);
+    logger.info(`🚀 Server running on http://localhost:${PORT}`);
+    logger.info(`📡 WebSocket server ready`);
+    logger.info(`🔌 tRPC endpoint: http://localhost:${PORT}/trpc`);
 });

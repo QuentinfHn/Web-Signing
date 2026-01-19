@@ -20,6 +20,9 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 
+# Install wget for health checks
+RUN apk add --no-cache wget
+
 # Copy node_modules (including Prisma client)
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
@@ -31,4 +34,5 @@ RUN mkdir -p /app/data
 
 EXPOSE 8080
 
-CMD ["npm", "start"]
+# Run migrations and start server
+CMD npx prisma migrate deploy && npm start
