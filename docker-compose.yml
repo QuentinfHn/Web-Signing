@@ -26,6 +26,8 @@ services:
       - "${FRONTEND_PORT:-3000}:80"
     depends_on:
       - backend
+    environment:
+      - BACKEND_URL=http://backend:8080
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:80"]
