@@ -46,6 +46,17 @@ async function main() {
     await prisma.screenState.deleteMany();
     await prisma.preset.deleteMany();
     await prisma.screen.deleteMany();
+    await prisma.display.deleteMany();
+
+    // Create displays first (required for foreign key)
+    const displays = [
+        { id: "display1", name: "Display 1" },
+        { id: "display2", name: "Display 2" },
+    ];
+    for (const display of displays) {
+        await prisma.display.create({ data: display });
+    }
+    console.log(`Created ${displays.length} displays`);
 
     // Insert screens
     for (const screen of screens) {
