@@ -52,6 +52,7 @@ cp .env.example .env
 nano .env
 
 # Deploy
+chmod +x deploy/deploy.sh
 ./deploy/deploy.sh
 ```
 
@@ -60,5 +61,6 @@ nano .env
 ```bash
 cd /opt/signage-led
 git pull origin main
+chmod +x deploy/deploy.sh
 ./deploy/deploy.sh
 ```
