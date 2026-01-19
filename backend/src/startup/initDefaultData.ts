@@ -49,6 +49,30 @@ export async function initDefaultData(): Promise<void> {
                 logger.info("✅ Created default scenarios");
             }
 
+            // Create default content image
+            const defaultImagePath = "/content/default/ledlease-default.png";
+            await prisma.content.create({
+                data: {
+                    id: "default-content",
+                    filename: "ledlease-default.png",
+                    path: defaultImagePath,
+                    category: "default",
+                    mimeType: "image/png",
+                    size: 0, // Size not critical for bundled asset
+                },
+            });
+            logger.info("✅ Created default content image");
+
+            // Assign default image to Scene 1 of the default screen
+            await prisma.scenarioAssignment.create({
+                data: {
+                    screenId: "default-screen",
+                    scenario: "Scene 1",
+                    imagePath: defaultImagePath,
+                },
+            });
+            logger.info("✅ Assigned default image to Scene 1");
+
             logger.info("🎉 Default configuration complete!");
         } else {
             logger.info(`📊 Found ${displayCount} existing display(s), skipping initialization`);
