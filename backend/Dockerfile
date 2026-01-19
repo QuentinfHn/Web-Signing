@@ -34,5 +34,5 @@ RUN mkdir -p /app/data
 
 EXPOSE 8080
 
-# Run migrations and start server
-CMD npx prisma migrate deploy && npm start
+# Run schema sync and start server
+CMD npx prisma db push && npm start
