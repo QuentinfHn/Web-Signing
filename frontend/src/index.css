@@ -1600,6 +1600,47 @@ body {
   color: var(--text-primary);
 }
 
+.location-mode-toggle .toggle-option {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-dark);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.location-mode-toggle .toggle-option:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.location-mode-toggle .toggle-option.active {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.location-mode-toggle .toggle-option input[type="radio"] {
+  accent-color: var(--accent);
+  margin: 0;
+}
+
+.edit-modal-row input.input-coordinate {
+  width: 180px !important;
+  min-width: 180px;
+  flex: none;
+}
+
+.edit-modal-row .input-address-manual {
+  flex: 1;
+  min-width: 150px;
+}
+
 .form-row-inline {
   display: flex;
   gap: 0.75rem;
@@ -1758,6 +1799,10 @@ body {
 
 .edit-modal-row input[type="number"] {
   width: 80px;
+}
+
+.edit-modal-row input[type="number"].input-coordinate {
+  width: 180px;
 }
 
 .edit-modal-row .input-postcode {

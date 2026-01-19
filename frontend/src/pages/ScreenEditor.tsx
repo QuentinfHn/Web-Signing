@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { trpcClient, Screen, Display } from "../utils/trpc";
 
 type ConflictMode = "update" | "skip" | "error";
+type LocationMode = "address" | "coordinates";
 
 interface ImportResult {
     created: number;
@@ -99,6 +100,10 @@ export default function ScreenEditor() {
 
     const [editPostcode, setEditPostcode] = useState("");
     const [editHuisnummer, setEditHuisnummer] = useState("");
+
+    // Location input mode state
+    const [newScreenLocationMode, setNewScreenLocationMode] = useState<LocationMode>("address");
+    const [editLocationMode, setEditLocationMode] = useState<LocationMode>("address");
 
     // Display handlers
     const handleCreateDisplay = async () => {
@@ -505,33 +510,83 @@ export default function ScreenEditor() {
 
                                         <div className="edit-modal-row">
                                             <label>Locatie:</label>
-                                            <input
-                                                type="text"
-                                                placeholder="Postcode"
-                                                value={newScreenData.postcode}
-                                                onChange={e => handleNewScreenChange("postcode", e.target.value.toUpperCase())}
-                                                maxLength={7}
-                                                className="input-postcode"
-                                            />
-                                            <input
-                                                type="text"
-                                                placeholder="Nr"
-                                                value={newScreenData.huisnummer}
-                                                onChange={e => handleNewScreenChange("huisnummer", e.target.value)}
-                                                className="input-huisnummer"
-                                            />
-                                            <button
-                                                type="button"
-                                                className="btn-geocode-small"
-                                                onClick={() => handleGeocode(`${newScreenData.postcode} ${newScreenData.huisnummer}`, false)}
-                                                disabled={!newScreenData.postcode || !newScreenData.huisnummer}
-                                            >
-                                                📍 Zoek
-                                            </button>
-                                            {newScreenData.address && (
-                                                <span className="address-found">✓ {newScreenData.address}</span>
-                                            )}
+                                            <div className="location-mode-toggle">
+                                                <label className={`toggle-option ${newScreenLocationMode === "address" ? "active" : ""}`}>
+                                                    <input
+                                                        type="radio"
+                                                        name="newLocationMode"
+                                                        value="address"
+                                                        checked={newScreenLocationMode === "address"}
+                                                        onChange={() => setNewScreenLocationMode("address")}
+                                                    />
+                                                    Adres
+                                                </label>
+                                                <label className={`toggle-option ${newScreenLocationMode === "coordinates" ? "active" : ""}`}>
+                                                    <input
+                                                        type="radio"
+                                                        name="newLocationMode"
+                                                        value="coordinates"
+                                                        checked={newScreenLocationMode === "coordinates"}
+                                                        onChange={() => setNewScreenLocationMode("coordinates")}
+                                                    />
+                                                    Coördinaten
+                                                </label>
+                                            </div>
                                         </div>
+
+                                        {newScreenLocationMode === "address" ? (
+                                            <div className="edit-modal-row">
+                                                <label></label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="Postcode"
+                                                    value={newScreenData.postcode}
+                                                    onChange={e => handleNewScreenChange("postcode", e.target.value.toUpperCase())}
+                                                    maxLength={7}
+                                                    className="input-postcode"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Nr"
+                                                    value={newScreenData.huisnummer}
+                                                    onChange={e => handleNewScreenChange("huisnummer", e.target.value)}
+                                                    className="input-huisnummer"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    className="btn-geocode-small"
+                                                    onClick={() => handleGeocode(`${newScreenData.postcode} ${newScreenData.huisnummer}`, false)}
+                                                    disabled={!newScreenData.postcode || !newScreenData.huisnummer}
+                                                >
+                                                    📍 Zoek
+                                                </button>
+                                                {newScreenData.address && (
+                                                    <span className="address-found">✓ {newScreenData.address}</span>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="edit-modal-row">
+                                                <label></label>
+                                                <label>Lat:</label>
+                                                <input
+                                                    type="number"
+                                                    placeholder="52.0000"
+                                                    value={newScreenData.lat || ""}
+                                                    onChange={e => handleNewScreenChange("lat", parseFloat(e.target.value) || 0)}
+                                                    step="0.00001"
+                                                    className="input-coordinate"
+                                                />
+                                                <label>Lng:</label>
+                                                <input
+                                                    type="number"
+                                                    placeholder="4.0000"
+                                                    value={newScreenData.lng || ""}
+                                                    onChange={e => handleNewScreenChange("lng", parseFloat(e.target.value) || 0)}
+                                                    step="0.00001"
+                                                    className="input-coordinate"
+                                                />
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="edit-modal-footer">
@@ -633,33 +688,83 @@ export default function ScreenEditor() {
 
                                         <div className="edit-modal-row">
                                             <label>Locatie:</label>
-                                            <input
-                                                type="text"
-                                                placeholder="Postcode"
-                                                value={editPostcode}
-                                                onChange={e => setEditPostcode(e.target.value.toUpperCase())}
-                                                maxLength={7}
-                                                className="input-postcode"
-                                            />
-                                            <input
-                                                type="text"
-                                                placeholder="Nr"
-                                                value={editHuisnummer}
-                                                onChange={e => setEditHuisnummer(e.target.value)}
-                                                className="input-huisnummer"
-                                            />
-                                            <button
-                                                type="button"
-                                                className="btn-geocode-small"
-                                                onClick={() => handleGeocode(`${editPostcode} ${editHuisnummer}`, true)}
-                                                disabled={!editPostcode || !editHuisnummer}
-                                            >
-                                                📍 Zoek
-                                            </button>
-                                            {formData.address && (
-                                                <span className="address-found">✓ {formData.address}</span>
-                                            )}
+                                            <div className="location-mode-toggle">
+                                                <label className={`toggle-option ${editLocationMode === "address" ? "active" : ""}`}>
+                                                    <input
+                                                        type="radio"
+                                                        name="editLocationMode"
+                                                        value="address"
+                                                        checked={editLocationMode === "address"}
+                                                        onChange={() => setEditLocationMode("address")}
+                                                    />
+                                                    Adres
+                                                </label>
+                                                <label className={`toggle-option ${editLocationMode === "coordinates" ? "active" : ""}`}>
+                                                    <input
+                                                        type="radio"
+                                                        name="editLocationMode"
+                                                        value="coordinates"
+                                                        checked={editLocationMode === "coordinates"}
+                                                        onChange={() => setEditLocationMode("coordinates")}
+                                                    />
+                                                    Coördinaten
+                                                </label>
+                                            </div>
                                         </div>
+
+                                        {editLocationMode === "address" ? (
+                                            <div className="edit-modal-row">
+                                                <label></label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="Postcode"
+                                                    value={editPostcode}
+                                                    onChange={e => setEditPostcode(e.target.value.toUpperCase())}
+                                                    maxLength={7}
+                                                    className="input-postcode"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Nr"
+                                                    value={editHuisnummer}
+                                                    onChange={e => setEditHuisnummer(e.target.value)}
+                                                    className="input-huisnummer"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    className="btn-geocode-small"
+                                                    onClick={() => handleGeocode(`${editPostcode} ${editHuisnummer}`, true)}
+                                                    disabled={!editPostcode || !editHuisnummer}
+                                                >
+                                                    📍 Zoek
+                                                </button>
+                                                {formData.address && (
+                                                    <span className="address-found">✓ {formData.address}</span>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="edit-modal-row">
+                                                <label></label>
+                                                <label>Lat:</label>
+                                                <input
+                                                    type="number"
+                                                    placeholder="52.0000"
+                                                    value={formData.lat || ""}
+                                                    onChange={e => handleInputChange("lat", parseFloat(e.target.value) || 0)}
+                                                    step="0.00001"
+                                                    className="input-coordinate"
+                                                />
+                                                <label>Lng:</label>
+                                                <input
+                                                    type="number"
+                                                    placeholder="4.0000"
+                                                    value={formData.lng || ""}
+                                                    onChange={e => handleInputChange("lng", parseFloat(e.target.value) || 0)}
+                                                    step="0.00001"
+                                                    className="input-coordinate"
+                                                />
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="edit-modal-footer">
