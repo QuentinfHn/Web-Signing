@@ -6,20 +6,21 @@ export default defineConfig({
     plugins: [
         react(),
         VitePWA({
-            registerType: "prompt", // Don't auto-reload, signage should stay stable
+            registerType: "autoUpdate", // Auto-update for Kiosk mode
             workbox: {
-                skipWaiting: false, // Don't force new SW to take over
-                clientsClaim: false, // Don't claim clients immediately
+                skipWaiting: true, // Force new SW to take over immediately
+                clientsClaim: true, // Claim clients immediately
                 globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
+                cleanupOutdatedCaches: true,
                 runtimeCaching: [
                     {
                         urlPattern: /^.*\/content\/.*/i,
-                        handler: "NetworkFirst",
+                        handler: "StaleWhileRevalidate", // Better for offline: serves cache while updating in bg
                         options: {
                             cacheName: "content-images",
                             expiration: {
-                                maxEntries: 100,
-                                maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
+                                maxEntries: 200,
+                                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
                             },
                             cacheableResponse: {
                                 statuses: [0, 200],
@@ -28,7 +29,16 @@ export default defineConfig({
                     },
                 ],
             },
-            manifest: false,
+            manifest: {
+                name: "LED Controller",
+                short_name: "LED",
+                theme_color: "#000000",
+                background_color: "#000000",
+                display: "fullscreen",
+                orientation: "landscape",
+                start_url: "/",
+                scope: "/",
+            },
         }),
     ],
     server: {
