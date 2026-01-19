@@ -8,18 +8,23 @@ DEPLOY_DIR="$ROOT_DIR/deploy"
 
 echo "Checking service health..."
 
-# Wait for services to be ready
-sleep 5
-
-# Check backend health endpoint
+# Wait for backend to be ready (up to 30 seconds)
 echo -n "Backend health: "
-if curl -sf http://localhost:8080/health > /dev/null 2>&1; then
-  echo "OK"
-else
-  echo "FAILED"
-  echo "Backend is not responding on http://localhost:8080/health"
-  exit 1
-fi
+MAX_RETRIES=6
+RETRY_INTERVAL=5
+for i in $(seq 1 $MAX_RETRIES); do
+  if curl -sf http://localhost:8080/health > /dev/null 2>&1; then
+    echo "OK"
+    break
+  fi
+  if [ $i -eq $MAX_RETRIES ]; then
+    echo "FAILED"
+    echo "Backend is not responding on http://localhost:8080/health after ${MAX_RETRIES} attempts"
+    exit 1
+  fi
+  echo -n "."
+  sleep $RETRY_INTERVAL
+done
 
 # Check frontend is serving
 echo -n "Frontend:       "

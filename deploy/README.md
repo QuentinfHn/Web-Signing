@@ -1,19 +1,3 @@
-# Deployment
-
-## Quick Start
-
-1. Copy the environment file and configure:
-   ```bash
-   cp .env.example .env
-   nano .env
-   ```
-
-2. Run the deployment:
-   ```bash
-   chmod +x deploy/deploy.sh
-   ./deploy/deploy.sh
-   ```
-
 ## First Time Setup on Server
 
 ### 1. Prepare directory and clone
@@ -24,7 +8,7 @@ sudo chown -R $USER:$USER /opt/signage-led
 cd /opt/signage-led
 
 # Option A: GitHub CLI (recommended)
-gh repo clone meesvandenberg/Signage-HTML-LED-controller .
+gh repo clone QuentinfHn/Signing.
 
 # Option B: Standard Git
 # git clone https://github.com/meesvandenberg/Signage-HTML-LED-controller.git .

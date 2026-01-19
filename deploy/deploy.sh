@@ -48,4 +48,5 @@ docker compose --env-file "$ENV_FILE" $COMPOSE_PROFILES ps
 # Run post-deploy health check
 echo ""
 echo "==> Running post-deploy checks..."
+chmod +x "$ROOT_DIR/deploy/scripts/check.sh"
 "$ROOT_DIR/deploy/scripts/check.sh"
