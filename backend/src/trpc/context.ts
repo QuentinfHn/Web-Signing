@@ -1,0 +1,34 @@
+import type { Request } from "express";
+import { verifyToken, isAuthEnabled } from "../auth/auth.js";
+
+export interface Context {
+    isAuthenticated: boolean;
+    authRequired: boolean;
+}
+
+/**
+ * Create tRPC context from Express request
+ * Extracts Authorization header and validates JWT token
+ */
+export function createContext({ req }: { req: Request }): Context {
+    const authRequired = isAuthEnabled();
+
+    // If auth is not enabled, everyone is authenticated
+    if (!authRequired) {
+        return { isAuthenticated: true, authRequired: false };
+    }
+
+    // Extract token from Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith("Bearer ")) {
+        return { isAuthenticated: false, authRequired: true };
+    }
+
+    const token = authHeader.slice(7);
+    const payload = verifyToken(token);
+
+    return {
+        isAuthenticated: payload !== null,
+        authRequired: true,
+    };
+}

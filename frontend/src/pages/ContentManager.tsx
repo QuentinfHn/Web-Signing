@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { trpcClient, Content } from "../utils/trpc";
+import { trpcClient, Content, getAuthHeaders } from "../utils/trpc";
 
 // Get backend URL for uploads
 const API_BASE = "";
@@ -48,6 +48,7 @@ export default function ContentManager() {
 
             const response = await fetch(`${API_BASE}/api/upload`, {
                 method: "POST",
+                headers: getAuthHeaders(),
                 body: formData,
             });
 

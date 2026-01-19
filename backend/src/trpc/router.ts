@@ -1,11 +1,58 @@
-import { initTRPC } from "@trpc/server";
+import { initTRPC, TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { prisma } from "../prisma/client.js";
+import { verifyPassword, generateToken, isAuthEnabled } from "../auth/auth.js";
+import type { Context } from "./context.js";
 
-const t = initTRPC.create();
+const t = initTRPC.context<Context>().create();
 
 export const router = t.router;
 export const publicProcedure = t.procedure;
+
+// Protected procedure - requires authentication when ADMIN_PASSWORD is set
+export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
+    if (ctx.authRequired && !ctx.isAuthenticated) {
+        throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Authenticatie vereist",
+        });
+    }
+    return next();
+});
+
+// Auth router
+export const authRouter = router({
+    login: publicProcedure
+        .input(z.object({ password: z.string() }))
+        .mutation(({ input }) => {
+            if (!isAuthEnabled()) {
+                return { success: true, token: null };
+            }
+
+            if (!verifyPassword(input.password)) {
+                throw new TRPCError({
+                    code: "UNAUTHORIZED",
+                    message: "Onjuist wachtwoord",
+                });
+            }
+
+            const token = generateToken();
+            return { success: true, token };
+        }),
+
+    verify: publicProcedure.query(({ ctx }) => {
+        return {
+            authenticated: ctx.isAuthenticated,
+            authRequired: ctx.authRequired,
+        };
+    }),
+
+    status: publicProcedure.query(() => {
+        return {
+            authEnabled: isAuthEnabled(),
+        };
+    }),
+});
 
 // Display router
 export const displayRouter = router({
@@ -16,7 +63,7 @@ export const displayRouter = router({
         });
     }),
 
-    create: publicProcedure
+    create: protectedProcedure
         .input(z.object({
             id: z.string().optional(),
             name: z.string().min(1),
@@ -45,7 +92,7 @@ export const displayRouter = router({
             });
         }),
 
-    update: publicProcedure
+    update: protectedProcedure
         .input(z.object({
             id: z.string(),
             name: z.string().optional(),
@@ -58,7 +105,7 @@ export const displayRouter = router({
             });
         }),
 
-    delete: publicProcedure
+    delete: protectedProcedure
         .input(z.object({ id: z.string() }))
         .mutation(async ({ input }) => {
             // Check if display has screens
@@ -73,7 +120,7 @@ export const displayRouter = router({
         }),
 
     // Initialize displays from existing screens (one-time migration helper)
-    initFromScreens: publicProcedure.mutation(async () => {
+    initFromScreens: protectedProcedure.mutation(async () => {
         const screens = await prisma.screen.findMany({
             select: { displayId: true },
             distinct: ["displayId"],
@@ -112,7 +159,7 @@ export const screenRouter = router({
             });
         }),
 
-    update: publicProcedure
+    update: protectedProcedure
         .input(z.object({
             id: z.string(),
             x: z.number().optional(),
@@ -133,7 +180,7 @@ export const screenRouter = router({
             });
         }),
 
-    create: publicProcedure
+    create: protectedProcedure
         .input(z.object({
             displayId: z.string(),
             x: z.number(),
@@ -151,7 +198,7 @@ export const screenRouter = router({
             return prisma.screen.create({ data: { id, ...input } });
         }),
 
-    delete: publicProcedure
+    delete: protectedProcedure
         .input(z.object({ id: z.string() }))
         .mutation(async ({ input }) => {
             await prisma.screen.delete({ where: { id: input.id } });
@@ -180,7 +227,7 @@ export const screenRouter = router({
         };
     }),
 
-    importScreens: publicProcedure
+    importScreens: protectedProcedure
         .input(z.object({
             screens: z.array(z.object({
                 id: z.string(),
@@ -271,7 +318,7 @@ export const presetRouter = router({
         }));
     }),
 
-    activate: publicProcedure
+    activate: protectedProcedure
         .input(z.object({ presetId: z.string() }))
         .mutation(async ({ input }) => {
             const preset = await prisma.preset.findUnique({
@@ -303,7 +350,7 @@ export const stateRouter = router({
         );
     }),
 
-    set: publicProcedure
+    set: protectedProcedure
         .input(z.object({ screenId: z.string(), imageSrc: z.string() }))
         .mutation(async ({ input }) => {
             const state = await prisma.screenState.upsert({
@@ -353,7 +400,7 @@ export const contentRouter = router({
         return categories;
     }),
 
-    delete: publicProcedure
+    delete: protectedProcedure
         .input(z.object({ id: z.string() }))
         .mutation(async ({ input }) => {
             const content = await prisma.content.findUnique({
@@ -375,7 +422,7 @@ export const contentRouter = router({
             return { success: true };
         }),
 
-    toggleFavorite: publicProcedure
+    toggleFavorite: protectedProcedure
         .input(z.object({ id: z.string() }))
         .mutation(async ({ input }) => {
             const content = await prisma.content.findUnique({
@@ -396,7 +443,7 @@ export const contentRouter = router({
         });
     }),
 
-    rename: publicProcedure
+    rename: protectedProcedure
         .input(z.object({ id: z.string(), newFilename: z.string().min(1) }))
         .mutation(async ({ input }) => {
             const content = await prisma.content.findUnique({
@@ -477,7 +524,7 @@ export const scenariosRouter = router({
             );
         }),
 
-    set: publicProcedure
+    set: protectedProcedure
         .input(z.object({
             screenId: z.string(),
             scenario: z.string(),
@@ -500,7 +547,7 @@ export const scenariosRouter = router({
             });
         }),
 
-    delete: publicProcedure
+    delete: protectedProcedure
         .input(z.object({ screenId: z.string(), scenario: z.string() }))
         .mutation(async ({ input }) => {
             await prisma.scenarioAssignment.delete({
@@ -538,7 +585,7 @@ export const scenarioNamesRouter = router({
         });
     }),
 
-    create: publicProcedure
+    create: protectedProcedure
         .input(z.object({
             name: z.string().min(1),
             displayOrder: z.number().optional(),
@@ -557,7 +604,7 @@ export const scenarioNamesRouter = router({
             });
         }),
 
-    rename: publicProcedure
+    rename: protectedProcedure
         .input(z.object({
             oldName: z.string(),
             newName: z.string().min(1),
@@ -578,7 +625,7 @@ export const scenarioNamesRouter = router({
             return updated;
         }),
 
-    delete: publicProcedure
+    delete: protectedProcedure
         .input(z.object({ name: z.string() }))
         .mutation(async ({ input }) => {
             // Delete all assignments for this scenario
@@ -593,7 +640,7 @@ export const scenarioNamesRouter = router({
         }),
 
     // Seed default scenarios if none exist
-    seedDefaults: publicProcedure.mutation(async () => {
+    seedDefaults: protectedProcedure.mutation(async () => {
         const count = await prisma.scenario.count();
         if (count === 0) {
             const defaults = ["Scene 1", "Scene 2", "Scene 3"];
@@ -610,6 +657,7 @@ export const scenarioNamesRouter = router({
 
 // Main app router
 export const appRouter = router({
+    auth: authRouter,
     displays: displayRouter,
     screens: screenRouter,
     presets: presetRouter,

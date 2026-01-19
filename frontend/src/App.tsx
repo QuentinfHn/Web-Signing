@@ -6,14 +6,17 @@ import ContentManager from "./pages/ContentManager";
 import ScreenEditor from "./pages/ScreenEditor";
 import MapOverview from "./pages/MapOverview";
 import { trpcClient, Display as DisplayType } from "./utils/trpc";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function Home() {
     const [displays, setDisplays] = useState<DisplayType[]>([]);
+    const { isAuthenticated, authRequired, logout } = useAuth();
 
     useEffect(() => {
         const loadDisplays = async () => {
             try {
-                 
+
                 const data = await trpcClient.displays.list.query();
                 setDisplays(data);
             } catch (error) {
@@ -56,21 +59,52 @@ function Home() {
                     </nav>
                 </>
             )}
+            {authRequired && isAuthenticated && (
+                <div className="auth-status">
+                    <button onClick={logout} className="btn-secondary logout-btn">
+                        Uitloggen
+                    </button>
+                </div>
+            )}
         </div>
+    );
+}
+
+function AppRoutes() {
+    return (
+        <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/control" element={
+                <ProtectedRoute>
+                    <Control />
+                </ProtectedRoute>
+            } />
+            <Route path="/content" element={
+                <ProtectedRoute>
+                    <ContentManager />
+                </ProtectedRoute>
+            } />
+            <Route path="/screens" element={
+                <ProtectedRoute>
+                    <ScreenEditor />
+                </ProtectedRoute>
+            } />
+            <Route path="/map" element={
+                <ProtectedRoute>
+                    <MapOverview />
+                </ProtectedRoute>
+            } />
+            <Route path="/display/:displayId" element={<Display />} />
+        </Routes>
     );
 }
 
 export default function App() {
     return (
         <BrowserRouter>
-            <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/control" element={<Control />} />
-                <Route path="/content" element={<ContentManager />} />
-                <Route path="/screens" element={<ScreenEditor />} />
-                <Route path="/map" element={<MapOverview />} />
-                <Route path="/display/:displayId" element={<Display />} />
-            </Routes>
+            <AuthProvider>
+                <AppRoutes />
+            </AuthProvider>
         </BrowserRouter>
     );
 }

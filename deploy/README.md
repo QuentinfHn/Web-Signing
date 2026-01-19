@@ -10,8 +10,8 @@
 
 2. Run the deployment:
    ```bash
-   chmod +x deploy.sh
-   ./deploy.sh
+   chmod +x deploy/deploy.sh
+   ./deploy/deploy.sh
    ```
 
 ## First Time Setup on Server
@@ -19,14 +19,14 @@
 ```bash
 # Clone the repository
 git clone <your-repo-url> /opt/signage-led
-cd /opt/signage-led/deploy
+cd /opt/signage-led
 
 # Configure environment
 cp .env.example .env
 nano .env
 
 # Deploy
-./deploy.sh
+./deploy/deploy.sh
 ```
 
 ## Updating

@@ -7,10 +7,12 @@ import { fileURLToPath } from "url";
 import multer from "multer";
 import fs from "fs";
 import { appRouter } from "./trpc/router.js";
+import { createContext } from "./trpc/context.js";
 import { createWebSocketHandler } from "./websocket/handler.js";
 import { prisma } from "./prisma/client.js";
 import { logger } from "./utils/logger.js";
 import { initDefaultData } from "./startup/initDefaultData.js";
+import { verifyToken, isAuthEnabled } from "./auth/auth.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,7 +32,7 @@ app.use((_req, res, next) => {
     const origin = process.env.FRONTEND_URL || "http://localhost:3000";
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
     if (_req.method === "OPTIONS") {
         res.sendStatus(200);
         return;
@@ -38,11 +40,12 @@ app.use((_req, res, next) => {
     next();
 });
 
-// tRPC endpoint
+// tRPC endpoint with context
 app.use(
     "/trpc",
     createExpressMiddleware({
         router: appRouter,
+        createContext: ({ req }) => createContext({ req }),
     })
 );
 
@@ -85,8 +88,33 @@ const upload = multer({
     },
 });
 
-// Upload endpoint
-app.post("/api/upload", upload.single("file"), async (req, res) => {
+// Auth middleware for upload endpoint
+const requireAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    // Skip auth if not enabled
+    if (!isAuthEnabled()) {
+        next();
+        return;
+    }
+
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith("Bearer ")) {
+        res.status(401).json({ error: "Authenticatie vereist" });
+        return;
+    }
+
+    const token = authHeader.slice(7);
+    const payload = verifyToken(token);
+
+    if (!payload) {
+        res.status(401).json({ error: "Ongeldige of verlopen sessie" });
+        return;
+    }
+
+    next();
+};
+
+// Upload endpoint (protected)
+app.post("/api/upload", requireAuth, upload.single("file"), async (req, res) => {
     try {
         if (!req.file) {
             res.status(400).json({ error: "No file uploaded" });
@@ -122,7 +150,7 @@ app.get("/health", (_req, res) => {
 const PORT = process.env.PORT || 8080;
 
 server.listen(PORT, () => {
-    logger.info(`🚀 Server running on http://localhost:${PORT}`);
-    logger.info(`📡 WebSocket server ready`);
-    logger.info(`🔌 tRPC endpoint: http://localhost:${PORT}/trpc`);
+    logger.info(`Server running on http://localhost:${PORT}`);
+    logger.info(`WebSocket server ready`);
+    logger.info(`tRPC endpoint: http://localhost:${PORT}/trpc`);
 });
