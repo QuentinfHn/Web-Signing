@@ -221,8 +221,23 @@ export const screenRouter = router({
             address: z.string().optional(),
         }))
         .mutation(async ({ input }) => {
-            // Generate a unique ID using timestamp + random suffix
-            const id = `scr_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+            // Generate a readable ID: {displayId}-{name-slug} or {displayId}-screen-{n}
+            const baseName = input.name?.trim() || "screen";
+            const nameSlug = baseName
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, "-")
+                .replace(/^-|-$/g, "");
+
+            const baseId = `${input.displayId}-${nameSlug}`;
+
+            // Ensure uniqueness by checking for existing IDs and adding suffix if needed
+            let id = baseId;
+            let counter = 1;
+            while (await prisma.screen.findUnique({ where: { id } })) {
+                id = `${baseId}-${counter}`;
+                counter++;
+            }
+
             return prisma.screen.create({ data: { id, ...input } });
         }),
 
