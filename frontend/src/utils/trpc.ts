@@ -19,10 +19,12 @@ import type { inferRouterOutputs } from "@trpc/server";
 // I will try to import it using a type-only import which might work if tsconfig allows.
 import type { AppRouter } from "../../../backend/src/trpc/router";
 
+const apiUrl = import.meta.env.VITE_API_URL || "";
+
 export const trpcClient = createTRPCClient<AppRouter>({
     links: [
         httpBatchLink({
-            url: "/trpc",
+            url: `${apiUrl}/trpc`,
         }),
     ],
 });

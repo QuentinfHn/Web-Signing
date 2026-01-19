@@ -16,9 +16,23 @@ export function useWebSocket(onStateUpdate: (state: ScreenState) => void) {
     const wsRef = useRef<WebSocket | null>(null);
     const [connected, setConnected] = useState(false);
 
+    const savedCallback = useRef(onStateUpdate);
+
     useEffect(() => {
-        const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-        const wsUrl = `${protocol}//${window.location.host}/ws`;
+        savedCallback.current = onStateUpdate;
+    }, [onStateUpdate]);
+
+    useEffect(() => {
+        const apiUrl = import.meta.env.VITE_API_URL;
+        let wsUrl: string;
+        if (apiUrl) {
+            // Use configured API URL, convert http(s) to ws(s)
+            wsUrl = apiUrl.replace(/^http/, "ws") + "/ws";
+        } else {
+            // Fallback to same host (development with proxy)
+            const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+            wsUrl = `${protocol}//${window.location.host}/ws`;
+        }
 
         const ws = new WebSocket(wsUrl);
         wsRef.current = ws;
@@ -36,7 +50,9 @@ export function useWebSocket(onStateUpdate: (state: ScreenState) => void) {
                 }
                 const message: WebSocketMessage = JSON.parse(data);
                 if (message.type === "state") {
-                    onStateUpdate(message.screens);
+                    if (savedCallback.current) {
+                        savedCallback.current(message.screens);
+                    }
                 }
             } catch (error) {
                 console.error("WebSocket message error:", error);
@@ -55,7 +71,7 @@ export function useWebSocket(onStateUpdate: (state: ScreenState) => void) {
         return () => {
             ws.close();
         };
-    }, [onStateUpdate]);
+    }, []);
 
     const sendMessage = useCallback((type: string, data: Record<string, unknown>) => {
         if (wsRef.current?.readyState === WebSocket.OPEN) {
