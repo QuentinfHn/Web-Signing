@@ -97,8 +97,6 @@ export default function ScreenEditor() {
         }
     };
 
-    const [createLocationMode, setCreateLocationMode] = useState<"address" | "coords">("address");
-    const [editLocationMode, setEditLocationMode] = useState<"address" | "coords">("address");
     const [editPostcode, setEditPostcode] = useState("");
     const [editHuisnummer, setEditHuisnummer] = useState("");
 
@@ -180,8 +178,6 @@ export default function ScreenEditor() {
         setFormData(screen);
         setEditPostcode("");
         setEditHuisnummer("");
-        // Default to address mode if there's an address, otherwise coords
-        setEditLocationMode(screen.address ? "address" : "coords");
         // Close create form if open
         setIsCreating(false);
     };
@@ -464,187 +460,98 @@ export default function ScreenEditor() {
 
                             {/* Add new screen form - Modal style */}
                             {isCreating && (
-                                <div className="screen-create-modal">
-                                    <div className="modal-header">
-                                        <h3>📺 Nieuw Scherm Toevoegen</h3>
+                                <div className="edit-modal">
+                                    <div className="edit-modal-header">
+                                        <span>📺 Nieuw Scherm Toevoegen</span>
                                     </div>
 
-                                    <div className="modal-content">
-                                        <div className="form-row-three-columns">
-                                            {/* Basic Info */}
-                                            <div className="form-section">
-                                                <h4>Basis Informatie</h4>
-                                                <div className="form-group">
-                                                    <label htmlFor="screen-name">Schermnaam</label>
-                                                    <input
-                                                        id="screen-name"
-                                                        type="text"
-                                                        placeholder="bijv. Lobby Display 1"
-                                                        value={newScreenData.name}
-                                                        onChange={e => handleNewScreenChange("name", e.target.value)}
-                                                    />
-                                                </div>
-                                            </div>
+                                    <div className="edit-modal-body">
+                                        <div className="edit-modal-row">
+                                            <label>Naam:</label>
+                                            <input
+                                                type="text"
+                                                placeholder="bijv. Lobby Display 1"
+                                                value={newScreenData.name}
+                                                onChange={e => handleNewScreenChange("name", e.target.value)}
+                                            />
+                                        </div>
 
-                                            {/* Location */}
-                                            <div className="form-section">
-                                                <h4>Fysieke Locatie</h4>
-                                                <p className="section-help">Optioneel: voor weergave op de kaart</p>
+                                        <div className="edit-modal-row">
+                                            <label>X:</label>
+                                            <input
+                                                type="number"
+                                                value={newScreenData.x}
+                                                onChange={e => handleNewScreenChange("x", parseInt(e.target.value) || 0)}
+                                            />
+                                            <label>Y:</label>
+                                            <input
+                                                type="number"
+                                                value={newScreenData.y}
+                                                onChange={e => handleNewScreenChange("y", parseInt(e.target.value) || 0)}
+                                            />
+                                            <label>Breedte:</label>
+                                            <input
+                                                type="number"
+                                                value={newScreenData.width}
+                                                onChange={e => handleNewScreenChange("width", parseInt(e.target.value) || 0)}
+                                            />
+                                            <label>Hoogte:</label>
+                                            <input
+                                                type="number"
+                                                value={newScreenData.height}
+                                                onChange={e => handleNewScreenChange("height", parseInt(e.target.value) || 0)}
+                                            />
+                                        </div>
 
-                                                <div className="location-mode-toggle">
-                                                    <button
-                                                        type="button"
-                                                        className={`mode-btn ${createLocationMode === "address" ? "active" : ""}`}
-                                                        onClick={() => setCreateLocationMode("address")}
-                                                    >
-                                                        📮 Adres
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        className={`mode-btn ${createLocationMode === "coords" ? "active" : ""}`}
-                                                        onClick={() => setCreateLocationMode("coords")}
-                                                    >
-                                                        🌐 Coördinaten
-                                                    </button>
-                                                </div>
-
-                                                {createLocationMode === "address" ? (
-                                                    <div className="location-address-form">
-                                                        <div className="form-row-inline">
-                                                            <div className="form-group flex-1">
-                                                                <label htmlFor="screen-postcode">Postcode</label>
-                                                                <input
-                                                                    id="screen-postcode"
-                                                                    type="text"
-                                                                    placeholder="1234AB"
-                                                                    value={newScreenData.postcode}
-                                                                    onChange={e => handleNewScreenChange("postcode", e.target.value.toUpperCase())}
-                                                                    maxLength={7}
-                                                                    className="input-uppercase"
-                                                                />
-                                                            </div>
-                                                            <div className="form-group flex-half">
-                                                                <label htmlFor="screen-huisnummer">Nr.</label>
-                                                                <input
-                                                                    id="screen-huisnummer"
-                                                                    type="text"
-                                                                    placeholder="123"
-                                                                    value={newScreenData.huisnummer}
-                                                                    onChange={e => handleNewScreenChange("huisnummer", e.target.value)}
-                                                                />
-                                                            </div>
-                                                            <button
-                                                                type="button"
-                                                                className="btn-geocode"
-                                                                onClick={() => handleGeocode(`${newScreenData.postcode} ${newScreenData.huisnummer}`, false)}
-                                                                disabled={!newScreenData.postcode || !newScreenData.huisnummer}
-                                                            >
-                                                                📍
-                                                            </button>
-                                                        </div>
-                                                        {newScreenData.address && (
-                                                            <div className="location-result">
-                                                                <span className="result-icon">✓</span>
-                                                                <span className="result-text">{newScreenData.address}</span>
-                                                            </div>
-                                                        )}
-                                                        {!newScreenData.address && newScreenData.lat !== 0 && (
-                                                            <div className="location-result coords">
-                                                                <span>📍 {newScreenData.lat.toFixed(5)}, {newScreenData.lng.toFixed(5)}</span>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                ) : (
-                                                    <div className="location-coords-form">
-                                                        <div className="form-row-inline">
-                                                            <div className="form-group flex-1">
-                                                                <label htmlFor="screen-lat">Latitude</label>
-                                                                <input
-                                                                    id="screen-lat"
-                                                                    type="number"
-                                                                    step="0.000001"
-                                                                    placeholder="52.12345"
-                                                                    value={newScreenData.lat || ""}
-                                                                    onChange={e => handleNewScreenChange("lat", parseFloat(e.target.value) || 0)}
-                                                                />
-                                                            </div>
-                                                            <div className="form-group flex-1">
-                                                                <label htmlFor="screen-lng">Longitude</label>
-                                                                <input
-                                                                    id="screen-lng"
-                                                                    type="number"
-                                                                    step="0.000001"
-                                                                    placeholder="4.12345"
-                                                                    value={newScreenData.lng || ""}
-                                                                    onChange={e => handleNewScreenChange("lng", parseFloat(e.target.value) || 0)}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {/* Position & Size */}
-                                            <div className="form-section">
-                                                <h4>Positie & Afmetingen</h4>
-                                                <p className="section-help">Positie in pixels binnen het 1920×1080 canvas</p>
-                                                <div className="form-grid-2x2">
-                                                    <div className="form-group">
-                                                        <label htmlFor="screen-x">X Positie</label>
-                                                        <input
-                                                            id="screen-x"
-                                                            type="number"
-                                                            value={newScreenData.x}
-                                                            onChange={e => handleNewScreenChange("x", parseInt(e.target.value) || 0)}
-                                                        />
-                                                    </div>
-                                                    <div className="form-group">
-                                                        <label htmlFor="screen-y">Y Positie</label>
-                                                        <input
-                                                            id="screen-y"
-                                                            type="number"
-                                                            value={newScreenData.y}
-                                                            onChange={e => handleNewScreenChange("y", parseInt(e.target.value) || 0)}
-                                                        />
-                                                    </div>
-                                                    <div className="form-group">
-                                                        <label htmlFor="screen-width">Breedte (px)</label>
-                                                        <input
-                                                            id="screen-width"
-                                                            type="number"
-                                                            value={newScreenData.width}
-                                                            onChange={e => handleNewScreenChange("width", parseInt(e.target.value) || 0)}
-                                                        />
-                                                    </div>
-                                                    <div className="form-group">
-                                                        <label htmlFor="screen-height">Hoogte (px)</label>
-                                                        <input
-                                                            id="screen-height"
-                                                            type="number"
-                                                            value={newScreenData.height}
-                                                            onChange={e => handleNewScreenChange("height", parseInt(e.target.value) || 0)}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </div>
+                                        <div className="edit-modal-row">
+                                            <label>Locatie:</label>
+                                            <input
+                                                type="text"
+                                                placeholder="Postcode"
+                                                value={newScreenData.postcode}
+                                                onChange={e => handleNewScreenChange("postcode", e.target.value.toUpperCase())}
+                                                maxLength={7}
+                                                className="input-postcode"
+                                            />
+                                            <input
+                                                type="text"
+                                                placeholder="Nr"
+                                                value={newScreenData.huisnummer}
+                                                onChange={e => handleNewScreenChange("huisnummer", e.target.value)}
+                                                className="input-huisnummer"
+                                            />
+                                            <button
+                                                type="button"
+                                                className="btn-geocode-small"
+                                                onClick={() => handleGeocode(`${newScreenData.postcode} ${newScreenData.huisnummer}`, false)}
+                                                disabled={!newScreenData.postcode || !newScreenData.huisnummer}
+                                            >
+                                                📍 Zoek
+                                            </button>
+                                            {newScreenData.address && (
+                                                <span className="address-found">✓ {newScreenData.address}</span>
+                                            )}
                                         </div>
                                     </div>
 
-                                    <div className="modal-footer">
-                                        <button
-                                            type="button"
-                                            className="btn-secondary"
-                                            onClick={() => setIsCreating(false)}
-                                        >
-                                            Annuleren
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className="btn-primary btn-create"
-                                            onClick={handleCreate}
-                                        >
-                                            ✓ Scherm Toevoegen
-                                        </button>
+                                    <div className="edit-modal-footer">
+                                        <div></div>
+                                        <div className="edit-modal-footer-right">
+                                            <button
+                                                type="button"
+                                                className="btn-secondary"
+                                                onClick={() => setIsCreating(false)}
+                                            >
+                                                Annuleren
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="btn-primary"
+                                                onClick={handleCreate}
+                                            >
+                                                ✓ Scherm Toevoegen
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             )}
