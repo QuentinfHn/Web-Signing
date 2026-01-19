@@ -10,6 +10,7 @@ import { appRouter } from "./trpc/router.js";
 import { createWebSocketHandler } from "./websocket/handler.js";
 import { prisma } from "./prisma/client.js";
 import { logger } from "./utils/logger.js";
+import { initDefaultData } from "./startup/initDefaultData.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,6 +18,9 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const server = createServer(app);
 const wss = new WebSocketServer({ server });
+
+// Initialize default data (creates default display/screen if database is empty)
+await initDefaultData();
 
 // Initialize WebSocket handler
 createWebSocketHandler(wss);
