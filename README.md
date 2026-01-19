@@ -60,3 +60,19 @@ npm run dev
 | `/control` | Control panel voor schermen |
 | `/display?display=display1` | Display 1 output |
 | `/display?display=display2` | Display 2 output |
+
+## 🚀 Production Deployment
+
+### Docker + Cloudflare Tunnel
+
+1. Copy `.env.example` to `.env` and fill in:
+   - `FRONTEND_URL` = your domain (e.g. `https://signage.example.com`)
+   - `TUNNEL_TOKEN` = Cloudflare tunnel token
+
+2. Deploy:
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
+
+3. Configure Cloudflare Tunnel to point to `http://frontend:80`
+

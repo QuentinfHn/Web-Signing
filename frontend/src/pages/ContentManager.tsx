@@ -8,7 +8,7 @@ const API_BASE = "";
 export default function ContentManager() {
     const [contents, setContents] = useState<Content[]>([]);
     const [categories, setCategories] = useState<string[]>([]);
-    const [selectedCategory, setSelectedCategory] = useState<string>("shared");
+    const [selectedCategory, setSelectedCategory] = useState<string>("");
     const [isDragging, setIsDragging] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [renameModal, setRenameModal] = useState<{ content: Content; newName: string } | null>(null);
@@ -16,14 +16,18 @@ export default function ContentManager() {
     // Fetch categories and content
     const loadContent = useCallback(async () => {
         try {
-            const [contentList, categoryList] = await Promise.all([
-                 
-                trpcClient.content.list.query({ category: selectedCategory }),
-                 
-                trpcClient.content.getCategories.query(),
-            ]);
+            const categoryList = await trpcClient.content.getCategories.query();
+            const allCategories = categoryList.length > 0 ? categoryList : ["Algemeen"];
+            setCategories(allCategories);
+
+            // Set default category if none selected
+            const categoryToUse = selectedCategory || allCategories[0];
+            if (!selectedCategory && allCategories[0]) {
+                setSelectedCategory(allCategories[0]);
+            }
+
+            const contentList = await trpcClient.content.list.query({ category: categoryToUse });
             setContents(contentList);
-            setCategories(["shared", ...categoryList.filter((c: string) => c !== "shared")]);
         } catch (error) {
             console.error("Failed to load content:", error);
         }
@@ -38,8 +42,9 @@ export default function ContentManager() {
         setUploading(true);
         try {
             const formData = new FormData();
-            formData.append("file", file);
+            // IMPORTANT: category must be appended BEFORE file for Multer to receive it in time
             formData.append("category", selectedCategory);
+            formData.append("file", file);
 
             const response = await fetch(`${API_BASE}/api/upload`, {
                 method: "POST",
