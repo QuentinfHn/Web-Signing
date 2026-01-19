@@ -1,11 +1,78 @@
-# Signage-HTML-LED-controller
+# Signage HTML LED Controller
 
-To start server:
+LED-scherm controller met React frontend, tRPC backend, Prisma database, en Docker deployment.
 
-cd C:\led-test
+## 🚀 Quick Start met Docker
 
-npm init -y
+```bash
+# Start de services
+./scripts/dev-up.sh
 
-npm install express ws
+# Stop de services
+./scripts/dev-down.sh
+```
 
-node server.js
+**URLs na starten:**
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8080
+
+## 📁 Project Structuur
+
+```
+├── backend/          # Express + tRPC + Prisma
+├── frontend/         # React + Vite
+├── content/          # Afbeeldingen voor schermen
+└── docker-compose.yml
+```
+
+## 🛠️ Development Setup
+
+### Backend
+
+```bash
+cd backend
+npm install
+npx prisma generate
+npx prisma db push
+npm run db:seed   # Laadt schermen & presets
+npm run dev
+```
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+## 📡 API Endpoints
+
+- **tRPC**: `/trpc` - Type-safe API
+- **WebSocket**: `ws://` - Realtime updates
+- **Content**: `/content/*` - Afbeeldingen
+
+## 🎮 Pagina's
+
+| URL | Beschrijving |
+|-----|--------------|
+| `/` | Home met navigatie |
+| `/control` | Control panel voor schermen |
+| `/display?display=display1` | Display 1 output |
+| `/display?display=display2` | Display 2 output |
+
+## 🚀 Production Deployment
+
+### Docker + Cloudflare Tunnel
+
+1. Copy `.env.example` to `.env` and fill in:
+   - `FRONTEND_URL` = your domain (e.g. `https://signage.example.com`)
+   - `TUNNEL_TOKEN` = Cloudflare tunnel token
+
+2. Deploy:
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
+
+3. Configure Cloudflare Tunnel to point to `http://frontend:80`
+

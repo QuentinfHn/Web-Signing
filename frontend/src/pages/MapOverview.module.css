@@ -1,0 +1,126 @@
+/* Map Overview Page Styles */
+
+.mapPage {
+    padding: 1rem 1.5rem;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.title {
+    font-size: 1.5rem;
+    background: linear-gradient(135deg, var(--accent), #8b5cf6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.mapLayout {
+    display: flex;
+    height: calc(100vh - 80px);
+    width: 100%;
+}
+
+.mapContainer {
+    flex: 1;
+    position: relative;
+}
+
+.mapSidebar {
+    width: 350px;
+    background-color: var(--bg-card);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 1000;
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.mapSidebar h2 {
+    padding: 1rem;
+    margin: 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 1.2rem;
+    background-color: var(--bg-dark);
+}
+
+.screenList {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+}
+
+.sidebarScreenItem {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.sidebarScreenItem:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.sidebarScreenItem.selected {
+    background-color: rgba(99, 102, 241, 0.1);
+    border-left: 4px solid var(--accent);
+}
+
+.screenInfo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.screenInfo h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.screenMeta {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.statusBadge {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
+    background-color: var(--bg-dark);
+    border: 1px solid var(--border);
+}
+
+.statusBadge.live {
+    background-color: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+.statusBadge.off {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.2);
+}
+
+/* Map Popups - global styles needed for Leaflet */
+:global(.map-popup) h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1rem;
+}
+
+:global(.map-popup) p {
+    margin: 0.25rem 0;
+    font-size: 0.85rem;
+    color: #333;
+}
+
+:global(.leaflet-popup-content-wrapper) {
+    border-radius: 8px;
+}

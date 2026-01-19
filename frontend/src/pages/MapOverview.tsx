@@ -1,0 +1,158 @@
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Link } from "react-router-dom";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { trpcClient, Screen } from "../utils/trpc";
+import { useWebSocket, ScreenState } from "../utils/websocket";
+import "leaflet/dist/leaflet.css";
+
+// Fix Leaflet marker icon issue
+import L from "leaflet";
+import icon from "leaflet/dist/images/marker-icon.png";
+import iconShadow from "leaflet/dist/images/marker-shadow.png";
+
+const DefaultIcon = L.icon({
+    iconUrl: icon,
+    shadowUrl: iconShadow,
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+});
+
+L.Marker.prototype.options.icon = DefaultIcon;
+
+// Helper component to control map from sidebar
+function MapController({ selectedScreenId, screens }: { selectedScreenId: string | null, screens: Screen[] }) {
+    const map = useMap();
+
+    useEffect(() => {
+        if (selectedScreenId) {
+            const screen = screens.find(s => s.id === selectedScreenId);
+            if (screen && screen.lat && screen.lng) {
+                map.flyTo([screen.lat, screen.lng], 16, {
+                    duration: 1.5
+                });
+            }
+        }
+    }, [selectedScreenId, screens, map]);
+
+    return null;
+}
+
+export default function MapOverview() {
+    const [screens, setScreens] = useState<Screen[]>([]);
+    const [screenStates, setScreenStates] = useState<ScreenState>({});
+    const [scenarios, setScenarios] = useState<Record<string, Record<string, string>>>({});
+    const [selectedScreenId, setSelectedScreenId] = useState<string | null>(null);
+    const markerRefs = useRef<Record<string, L.Marker | null>>({});
+
+    // Connect to WebSocket for live updates
+    const handleStateUpdate = useCallback((state: ScreenState) => {
+        setScreenStates(state);
+    }, []);
+
+    const { connected } = useWebSocket(handleStateUpdate);
+
+    useEffect(() => {
+        trpcClient.screens.list.query().then(setScreens).catch(console.error);
+        trpcClient.scenarios.getAll.query().then(setScenarios).catch(console.error);
+    }, []);
+
+    // Filter screens with valid coordinates
+    const locatedScreens = screens.filter(s => s.lat != null && s.lng != null && s.lat !== 0 && s.lng !== 0);
+
+    // Default center (Maastricht roughly, or average of screens)
+    const center: [number, number] = [50.8514, 5.6910];
+
+    const getScenarioName = (screenId: string, currentSrc: string | null) => {
+        if (!currentSrc) return "Uit";
+        const screenScenarios = scenarios[screenId];
+        if (!screenScenarios) return "Onbekend";
+
+        const entry = Object.entries(screenScenarios).find(([_, src]) => src === currentSrc);
+        return entry ? entry[0] : "Handmatige content";
+    };
+
+    const handleSidebarClick = (screenId: string) => {
+        setSelectedScreenId(screenId);
+        // Open popup if ref exists
+        const marker = markerRefs.current[screenId];
+        if (marker) {
+            marker.openPopup();
+        }
+    };
+
+    return (
+        <div className="map-page">
+            <header>
+                <h1>Live Map Overview</h1>
+                <div className="header-actions">
+                    <span className={`connection-status ${connected ? "connected" : "disconnected"}`}>
+                        {connected ? "Verbonden" : "Niet verbonden"}
+                    </span>
+                    <Link to="/" className="back-link">Terug</Link>
+                </div>
+            </header>
+
+            <div className="map-layout">
+                <div className="map-container">
+                    <MapContainer center={center} zoom={13} style={{ height: "100%", width: "100%" }}>
+                        <TileLayer
+                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        />
+                        <MapController selectedScreenId={selectedScreenId} screens={screens} />
+                        {locatedScreens.map(screen => (
+                            <Marker
+                                key={screen.id}
+                                position={[screen.lat!, screen.lng!]}
+                                ref={ref => {
+                                    if (ref) markerRefs.current[screen.id] = ref;
+                                }}
+                                eventHandlers={{
+                                    click: () => setSelectedScreenId(screen.id)
+                                }}
+                            >
+                                <Popup>
+                                    <div className="map-popup">
+                                        <h3>{screen.name || screen.id}</h3>
+                                        <p><strong>Display:</strong> {screen.displayId}</p>
+                                        <p><strong>Status:</strong> {screenStates[screen.id]?.src ? "▶ " + getScenarioName(screen.id, screenStates[screen.id]?.src || null) : "⏾ Uit"}</p>
+                                        {screen.address && <p><strong>Adres:</strong> {screen.address}</p>}
+                                    </div>
+                                </Popup>
+                            </Marker>
+                        ))}
+                    </MapContainer>
+                </div>
+
+                <aside className="map-sidebar">
+                    <h2>Actieve Schermen</h2>
+                    <div className="screen-list">
+                        {locatedScreens.map(screen => {
+                            const isLive = !!screenStates[screen.id]?.src;
+                            const statusLabel = getScenarioName(screen.id, screenStates[screen.id]?.src || null);
+
+                            return (
+                                <div
+                                    key={screen.id}
+                                    className={`sidebar-screen-item ${selectedScreenId === screen.id ? "selected" : ""}`}
+                                    onClick={() => handleSidebarClick(screen.id)}
+                                >
+                                    <div className="screen-info">
+                                        <h3>{screen.name || screen.id}</h3>
+                                        <span className={`status-badge ${isLive ? "live" : "off"}`}>
+                                            {isLive ? statusLabel : "Uit"}
+                                        </span>
+                                    </div>
+                                    <div className="screen-meta">
+                                        <small>{screen.address || "Geen adres"}</small>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                        {locatedScreens.length === 0 && <p className="empty-message">Geen schermen op de kaart gevonden.</p>}
+                    </div>
+                </aside>
+            </div>
+        </div>
+    );
+}

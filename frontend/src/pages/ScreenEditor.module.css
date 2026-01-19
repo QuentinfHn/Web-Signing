@@ -1,0 +1,309 @@
+/* Screen Editor Page Styles */
+
+.screenEditor {
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.screenEditor.compact {
+    padding: 1rem 1.5rem;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.screenEditor.compact .header {
+    margin-bottom: 1rem;
+}
+
+.title {
+    font-size: 2rem;
+    background: linear-gradient(135deg, var(--accent), #8b5cf6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.screenEditor.compact .title {
+    font-size: 1.5rem;
+}
+
+.headerActions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.toggleBtn {
+    padding: 0.4rem 0.8rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+.toggleBtn:hover,
+.toggleBtn.active {
+    background: var(--bg-card-hover);
+    border-color: var(--accent);
+    color: var(--text-primary);
+}
+
+/* Editor Layout - Two Columns */
+.editorLayout {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 1rem;
+    min-height: calc(100vh - 140px);
+}
+
+/* Displays Panel */
+.displaysPanel {
+    background: var(--bg-card);
+    border-radius: 8px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.displaysPanel h2 {
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.displayList {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 0.75rem;
+}
+
+.displayItem {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.6rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    margin-bottom: 0.25rem;
+}
+
+.displayItem:hover {
+    background: var(--bg-card-hover);
+}
+
+.displayItem.selected {
+    background: rgba(59, 130, 246, 0.2);
+    border-left: 3px solid var(--accent);
+}
+
+.displayName {
+    flex: 1;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.displayCount {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    background: var(--bg-dark);
+    padding: 0.15rem 0.4rem;
+    border-radius: 10px;
+}
+
+.addDisplayForm {
+    display: flex;
+    gap: 0.4rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border);
+}
+
+.addDisplayForm input {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Screens Panel */
+.screensPanel {
+    background: var(--bg-card);
+    border-radius: 8px;
+    padding: 1rem;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.panelHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.panelHeader h2 {
+    font-size: 1rem;
+    margin: 0;
+}
+
+/* Visualizer */
+.visualizerContainer {
+    margin-bottom: 0.75rem;
+    overflow-x: auto;
+}
+
+.visualizerCanvas {
+    position: relative;
+    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.screenEditor.compact .visualizerCanvas {
+    margin: 0;
+}
+
+.canvasLabel {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    opacity: 0.5;
+}
+
+.visualizerScreen {
+    position: absolute;
+    background: rgba(59, 130, 246, 0.3);
+    border: 2px solid var(--accent);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.visualizerScreen:hover {
+    background: rgba(59, 130, 246, 0.5);
+    transform: scale(1.02);
+    z-index: 10;
+}
+
+.visualizerScreen.editing {
+    border-color: var(--warning);
+    background: rgba(245, 158, 11, 0.3);
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.5);
+}
+
+.visualizerScreen .screenLabel {
+    font-size: 0.65rem;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+    text-align: center;
+    padding: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Screen Table */
+.screenTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.screenTable th,
+.screenTable td {
+    padding: 0.5rem 0.6rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+
+.screenTable th {
+    color: var(--text-secondary);
+    font-weight: 500;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+}
+
+.screenTable tbody tr {
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.screenTable tbody tr:hover {
+    background: var(--bg-card-hover);
+}
+
+.screenTable tbody tr.editingRow {
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.screenTable tbody tr.selectedRow {
+    background: rgba(59, 130, 246, 0.15);
+    border-left: 3px solid var(--accent);
+}
+
+.screenTable input {
+    padding: 0.3rem 0.4rem;
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    width: 100%;
+}
+
+.screenTable input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.screenTable input:disabled {
+    opacity: 0.6;
+}
+
+.screenTable input[type="number"] {
+    width: 100px;
+}
+
+.screenTable .actions {
+    white-space: nowrap;
+    text-align: right;
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+    .editorLayout {
+        grid-template-columns: 1fr;
+    }
+
+    .displaysPanel {
+        max-height: 200px;
+    }
+
+    .displayList {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .displayItem {
+        margin-bottom: 0;
+    }
+}

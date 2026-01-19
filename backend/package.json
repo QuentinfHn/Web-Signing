@@ -1,0 +1,43 @@
+{
+    "name": "led-controller-backend",
+    "version": "1.0.0",
+    "main": "dist/index.js",
+    "type": "module",
+    "scripts": {
+        "dev": "dotenv -e ../.env -- tsx watch src/index.ts",
+        "build": "tsc",
+        "start": "dotenv -e ../.env -- node dist/index.js",
+        "db:push": "dotenv -e ../.env -- prisma db push",
+        "db:generate": "prisma generate",
+        "db:seed": "dotenv -e ../.env -- tsx prisma/seed.ts",
+        "lint": "eslint src/**",
+        "lint:fix": "eslint src/** --fix",
+        "test": "echo \"No tests specified yet\" && exit 0"
+    },
+    "dependencies": {
+        "@prisma/client": "^6.0.0",
+        "@trpc/server": "^11.0.0",
+        "express": "^5.0.0",
+        "jsonwebtoken": "^9.0.3",
+        "led-controller-root": "file:..",
+        "multer": "^2.0.2",
+        "ws": "^8.18.0",
+        "zod": "^3.24.0"
+    },
+    "devDependencies": {
+        "@types/express": "^5.0.0",
+        "@types/jsonwebtoken": "^9.0.10",
+        "@types/multer": "^2.0.0",
+        "@types/node": "^22.0.0",
+        "@types/ws": "^8.5.0",
+        "@typescript-eslint/eslint-plugin": "^8.53.0",
+        "@typescript-eslint/parser": "^8.53.0",
+        "dotenv-cli": "^11.0.0",
+        "eslint": "^9.39.2",
+        "globals": "^17.0.0",
+        "prisma": "^6.0.0",
+        "tsx": "^4.19.0",
+        "typescript": "^5.7.0",
+        "typescript-eslint": "^8.53.0"
+    }
+}

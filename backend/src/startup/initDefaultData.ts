@@ -1,0 +1,116 @@
+import { prisma } from "../prisma/client.js";
+import { logger } from "../utils/logger.js";
+import fs from "fs";
+import path from "path";
+
+/**
+ * Initialize default data if the database is empty.
+ * Creates a default display and 512x512 screen for fresh deployments.
+ */
+export async function initDefaultData(): Promise<void> {
+    try {
+        // Check if any displays exist
+        const displayCount = await prisma.display.count();
+
+        if (displayCount === 0) {
+            logger.info("🔧 No displays found, creating default configuration...");
+
+            // Create default display
+            await prisma.display.create({
+                data: {
+                    id: "main",
+                    name: "Main Display",
+                },
+            });
+            logger.info("✅ Created default display: main");
+
+            // Create default 512x512 screen
+            await prisma.screen.create({
+                data: {
+                    id: "default-screen",
+                    displayId: "main",
+                    name: "Default Screen",
+                    x: 0,
+                    y: 0,
+                    width: 512,
+                    height: 512,
+                },
+            });
+            logger.info("✅ Created default screen: 512x512");
+
+            // Also seed default scenarios if they don't exist
+            const scenarioCount = await prisma.scenario.count();
+            if (scenarioCount === 0) {
+                const defaults = ["Scene 1", "Scene 2", "Scene 3"];
+                for (let i = 0; i < defaults.length; i++) {
+                    await prisma.scenario.create({
+                        data: { name: defaults[i], displayOrder: i },
+                    });
+                }
+                logger.info("✅ Created default scenarios");
+            }
+
+            // Copy bundled default image to content folder
+            // Use process.cwd() which is /app in Docker and project root in dev
+            const appRoot = process.cwd();
+            const contentDir = path.join(appRoot, "content/default");
+            const targetPath = path.join(contentDir, "ledlease-default.png");
+            const defaultImagePath = "/content/default/ledlease-default.png";
+
+            // Create content/default directory if it doesn't exist
+            if (!fs.existsSync(contentDir)) {
+                fs.mkdirSync(contentDir, { recursive: true });
+            }
+
+            // Copy bundled asset if target doesn't exist
+            let fileSize = 0;
+            if (!fs.existsSync(targetPath)) {
+                // In Docker: assets folder is at /app/assets
+                // In dev: assets folder is at backend/assets
+                const sourcePath = path.join(appRoot, "assets/ledlease-default.png");
+                if (fs.existsSync(sourcePath)) {
+                    fs.copyFileSync(sourcePath, targetPath);
+                    logger.info("✅ Copied default image to content folder");
+                } else {
+                    logger.warn("⚠️ Bundled default image not found at: " + sourcePath);
+                }
+            }
+
+            // Get the actual file size
+            if (fs.existsSync(targetPath)) {
+                const stats = fs.statSync(targetPath);
+                fileSize = stats.size;
+            }
+
+            // Create default content record in database
+            await prisma.content.create({
+                data: {
+                    id: "default-content",
+                    filename: "ledlease-default.png",
+                    path: defaultImagePath,
+                    category: "default",
+                    mimeType: "image/png",
+                    size: fileSize,
+                },
+            });
+            logger.info("✅ Created default content image");
+
+            // Assign default image to Scene 1 of the default screen
+            await prisma.scenarioAssignment.create({
+                data: {
+                    screenId: "default-screen",
+                    scenario: "Scene 1",
+                    imagePath: defaultImagePath,
+                },
+            });
+            logger.info("✅ Assigned default image to Scene 1");
+
+            logger.info("🎉 Default configuration complete!");
+        } else {
+            logger.info(`📊 Found ${displayCount} existing display(s), skipping initialization`);
+        }
+    } catch (error) {
+        logger.error("Failed to initialize default data:", error);
+        // Don't throw - let the server start anyway
+    }
+}
