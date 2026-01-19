@@ -6,7 +6,6 @@ import path from "path";
 /**
  * Initialize default data if the database is empty.
  * Creates a default display and 512x512 screen for fresh deployments.
- * This is especially useful for Render's free tier where the database resets on restart.
  */
 export async function initDefaultData(): Promise<void> {
     try {
