@@ -1,0 +1,37 @@
+# Render Blueprint
+# Deploy with: https://render.com/deploy
+
+services:
+  # Backend API
+  - type: web
+    name: led-signage-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        value: file:/app/data/led.db
+      - key: FRONTEND_URL
+        sync: false  # Set manually after frontend deploys
+    disk:
+      name: led-data
+      mountPath: /app/data
+      sizeGB: 1
+    autoDeploy: true
+
+  # Frontend (Static Site)
+  - type: web
+    name: led-signage-frontend
+    runtime: docker
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: led-signage-backend
+          property: host
+    autoDeploy: true
