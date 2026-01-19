@@ -4,6 +4,46 @@ import { trpcClient, Screen } from "../utils/trpc";
 import { useWebSocket, ScreenState } from "../utils/websocket";
 
 const FADE_TIME = 500;
+const STATE_STORAGE_KEY = 'signage-display-state';
+const SCREENS_STORAGE_KEY = 'signage-display-screens';
+
+// Load cached state from localStorage
+function loadCachedState(displayId: string): ScreenState | null {
+    try {
+        const stored = localStorage.getItem(`${STATE_STORAGE_KEY}-${displayId}`);
+        return stored ? JSON.parse(stored) : null;
+    } catch {
+        return null;
+    }
+}
+
+// Save state to localStorage
+function saveCachedState(displayId: string, state: ScreenState) {
+    try {
+        localStorage.setItem(`${STATE_STORAGE_KEY}-${displayId}`, JSON.stringify(state));
+    } catch {
+        // localStorage might be full or unavailable
+    }
+}
+
+// Load cached screens from localStorage
+function loadCachedScreens(displayId: string): Screen[] | null {
+    try {
+        const stored = localStorage.getItem(`${SCREENS_STORAGE_KEY}-${displayId}`);
+        return stored ? JSON.parse(stored) : null;
+    } catch {
+        return null;
+    }
+}
+
+// Save screens to localStorage
+function saveCachedScreens(displayId: string, screens: Screen[]) {
+    try {
+        localStorage.setItem(`${SCREENS_STORAGE_KEY}-${displayId}`, JSON.stringify(screens));
+    } catch {
+        // localStorage might be full or unavailable
+    }
+}
 
 interface ImageSize {
     width: number;
@@ -13,16 +53,24 @@ interface ImageSize {
 export default function Display() {
     const { displayId = "display1" } = useParams<{ displayId: string }>();
 
-    const [screens, setScreens] = useState<Screen[]>([]);
-    const [screenStates, setScreenStates] = useState<ScreenState>({});
+    // Initialize with cached data if available
+    const [screens, setScreens] = useState<Screen[]>(() => loadCachedScreens(displayId) || []);
+    const [screenStates, setScreenStates] = useState<ScreenState>(() => loadCachedState(displayId) || {});
     const [previousSrcs, setPreviousSrcs] = useState<Record<string, string>>({});
     const [fadingScreens, setFadingScreens] = useState<Set<string>>(new Set());
     const [imageSizes, setImageSizes] = useState<Record<string, ImageSize>>({});
 
-    // Fetch screens on mount
+    // Fetch screens on mount, fallback to cached
     useEffect(() => {
-
-        trpcClient.screens.getByDisplay.query({ displayId }).then(setScreens).catch(console.error);
+        trpcClient.screens.getByDisplay.query({ displayId })
+            .then((data) => {
+                setScreens(data);
+                saveCachedScreens(displayId, data);
+            })
+            .catch((err) => {
+                console.error('Failed to fetch screens, using cached:', err);
+                // Already initialized with cached data
+            });
     }, [displayId]);
 
     const handleStateUpdate = useCallback((state: ScreenState) => {
@@ -50,7 +98,10 @@ export default function Display() {
         }
 
         setScreenStates(state);
-    }, [screenStates, previousSrcs]);
+
+        // Cache state to localStorage for offline use
+        saveCachedState(displayId, state);
+    }, [displayId, screenStates, previousSrcs]);
 
     useWebSocket(handleStateUpdate);
 
