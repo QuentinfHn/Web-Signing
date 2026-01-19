@@ -6,8 +6,10 @@ export default defineConfig({
     plugins: [
         react(),
         VitePWA({
-            registerType: "autoUpdate",
+            registerType: "prompt", // Don't auto-reload, signage should stay stable
             workbox: {
+                skipWaiting: false, // Don't force new SW to take over
+                clientsClaim: false, // Don't claim clients immediately
                 globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
                 runtimeCaching: [
                     {
