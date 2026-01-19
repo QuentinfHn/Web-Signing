@@ -1,5 +1,7 @@
 import { prisma } from "../prisma/client.js";
 import { logger } from "../utils/logger.js";
+import fs from "fs";
+import path from "path";
 
 /**
  * Initialize default data if the database is empty.
@@ -49,8 +51,32 @@ export async function initDefaultData(): Promise<void> {
                 logger.info("✅ Created default scenarios");
             }
 
-            // Create default content image
+            // Copy bundled default image to content folder
+            // Use process.cwd() which is /app in Docker and project root in dev
+            const appRoot = process.cwd();
+            const contentDir = path.join(appRoot, "content/default");
+            const targetPath = path.join(contentDir, "ledlease-default.png");
             const defaultImagePath = "/content/default/ledlease-default.png";
+
+            // Create content/default directory if it doesn't exist
+            if (!fs.existsSync(contentDir)) {
+                fs.mkdirSync(contentDir, { recursive: true });
+            }
+
+            // Copy bundled asset if target doesn't exist
+            if (!fs.existsSync(targetPath)) {
+                // In Docker: assets folder is at /app/assets
+                // In dev: assets folder is at backend/assets
+                const sourcePath = path.join(appRoot, "assets/ledlease-default.png");
+                if (fs.existsSync(sourcePath)) {
+                    fs.copyFileSync(sourcePath, targetPath);
+                    logger.info("✅ Copied default image to content folder");
+                } else {
+                    logger.warn("⚠️ Bundled default image not found at: " + sourcePath);
+                }
+            }
+
+            // Create default content record in database
             await prisma.content.create({
                 data: {
                     id: "default-content",
