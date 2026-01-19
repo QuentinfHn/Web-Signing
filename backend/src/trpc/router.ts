@@ -9,6 +9,32 @@ const t = initTRPC.context<Context>().create();
 export const router = t.router;
 export const publicProcedure = t.procedure;
 
+const loginAttempts = new Map<string, { count: number; resetTime: number }>();
+
+const checkLoginRateLimit = (ip: string) => {
+    const now = Date.now();
+    const windowMs = 15 * 60 * 1000;
+    const maxAttempts = 5;
+
+    const attempts = loginAttempts.get(ip);
+
+    if (!attempts || now > attempts.resetTime) {
+        loginAttempts.set(ip, { count: 1, resetTime: now + windowMs });
+        return true;
+    }
+
+    if (attempts.count >= maxAttempts) {
+        const remainingTime = Math.ceil((attempts.resetTime - now) / 60000);
+        throw new TRPCError({
+            code: "TOO_MANY_REQUESTS",
+            message: `Te veel login pogingen. Probeer opnieuw over ${remainingTime} minuten.`,
+        });
+    }
+
+    attempts.count++;
+    return true;
+};
+
 // Protected procedure - requires authentication when ADMIN_PASSWORD is set
 export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
     if (ctx.authRequired && !ctx.isAuthenticated) {
@@ -24,7 +50,9 @@ export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
 export const authRouter = router({
     login: publicProcedure
         .input(z.object({ password: z.string() }))
-        .mutation(({ input }) => {
+        .mutation(({ input, ctx }) => {
+            checkLoginRateLimit(ctx.ip || "unknown");
+
             if (!isAuthEnabled()) {
                 return { success: true, token: null };
             }

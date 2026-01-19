@@ -1,8 +1,18 @@
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 
-const JWT_SECRET = process.env.JWT_SECRET || "default-dev-secret-change-in-production";
+const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = "7d";
+
+if (!JWT_SECRET && process.env.NODE_ENV === "production") {
+    throw new Error("JWT_SECRET is required in production. Set JWT_SECRET environment variable with a secure random string.");
+}
+
+if (!JWT_SECRET) {
+    console.warn("⚠️  WARNING: JWT_SECRET not set. Using default secret for development. DO NOT USE IN PRODUCTION!");
+}
+
+const SECRET = JWT_SECRET || "default-dev-secret-change-in-production";
 
 export interface JWTPayload {
     authenticated: true;
@@ -45,15 +55,12 @@ export function verifyPassword(inputPassword: string): boolean {
  */
 export function generateToken(): string {
     const payload: JWTPayload = { authenticated: true };
-    return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+    return jwt.sign(payload, SECRET, { expiresIn: JWT_EXPIRES_IN });
 }
 
-/**
- * Verify and decode a JWT token
- */
 export function verifyToken(token: string): JWTPayload | null {
     try {
-        const decoded = jwt.verify(token, JWT_SECRET);
+        const decoded = jwt.verify(token, SECRET);
         if (typeof decoded === 'object' && decoded !== null && 'authenticated' in decoded) {
             return decoded as JWTPayload;
         }
@@ -62,3 +69,4 @@ export function verifyToken(token: string): JWTPayload | null {
         return null;
     }
 }
+

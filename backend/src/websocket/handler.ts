@@ -9,7 +9,6 @@ export interface ScreenStateMap {
 }
 
 const PING_INTERVAL = 30000; // 30 seconds
-const PONG_TIMEOUT = 35000; // 35 seconds
 
 interface ExtendedWebSocket extends WebSocket {
     isAlive: boolean;

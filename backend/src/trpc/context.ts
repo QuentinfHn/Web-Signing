@@ -4,6 +4,7 @@ import { verifyToken, isAuthEnabled } from "../auth/auth.js";
 export interface Context {
     isAuthenticated: boolean;
     authRequired: boolean;
+    ip: string;
 }
 
 /**
@@ -12,16 +13,17 @@ export interface Context {
  */
 export function createContext({ req }: { req: Request }): Context {
     const authRequired = isAuthEnabled();
+    const ip = req.ip || req.socket.remoteAddress || "unknown";
 
     // If auth is not enabled, everyone is authenticated
     if (!authRequired) {
-        return { isAuthenticated: true, authRequired: false };
+        return { isAuthenticated: true, authRequired: false, ip };
     }
 
     // Extract token from Authorization header
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith("Bearer ")) {
-        return { isAuthenticated: false, authRequired: true };
+        return { isAuthenticated: false, authRequired: true, ip };
     }
 
     const token = authHeader.slice(7);
@@ -30,5 +32,6 @@ export function createContext({ req }: { req: Request }): Context {
     return {
         isAuthenticated: payload !== null,
         authRequired: true,
+        ip,
     };
 }
