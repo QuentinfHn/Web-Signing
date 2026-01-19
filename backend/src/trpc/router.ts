@@ -22,8 +22,24 @@ export const displayRouter = router({
             name: z.string().min(1),
         }))
         .mutation(async ({ input }) => {
-            // Auto-generate ID if not provided
-            const id = input.id?.trim() || `disp_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+            // Generate slug from name if no ID provided
+            let id = input.id?.trim();
+            if (!id) {
+                // Convert name to URL-friendly slug
+                const baseSlug = input.name
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, "-")
+                    .replace(/^-|-$/g, "");
+
+                // Check for duplicates and add suffix if needed
+                let slug = baseSlug;
+                let counter = 1;
+                while (await prisma.display.findUnique({ where: { id: slug } })) {
+                    slug = `${baseSlug}-${counter}`;
+                    counter++;
+                }
+                id = slug;
+            }
             return prisma.display.create({
                 data: { id, name: input.name },
             });
