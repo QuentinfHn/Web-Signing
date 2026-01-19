@@ -36,11 +36,24 @@ function requireCompanionAuth(req: express.Request, res: express.Response, next:
     res.status(401).json({ error: "Unauthorized" });
 }
 
+router.get("/displays", requireCompanionAuth, async (req, res) => {
+    try {
+        const displays = await prisma.display.findMany({
+            orderBy: { id: "asc" },
+            include: { _count: { select: { screens: true } } },
+        });
+        res.json(displays);
+    } catch (error) {
+        logger.error("Error fetching displays:", error);
+        res.status(500).json({ error: "Failed to fetch displays" });
+    }
+});
+
 router.get("/screens", requireCompanionAuth, async (req, res) => {
     try {
         const screens = await prisma.screen.findMany({
             orderBy: { id: "asc" },
-            select: { id: true, name: true },
+            select: { id: true, name: true, displayId: true },
         });
         res.json(screens);
     } catch (error) {

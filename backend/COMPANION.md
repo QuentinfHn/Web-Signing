@@ -24,7 +24,37 @@ The following headers must be allowed in Companion:
 
 Base URL: `http://localhost:8080/api/companion`
 
-### 1. Get Screens
+### 1. Get Displays
+
+Returns a list of all available displays (physical display groups).
+
+**Endpoint:** `GET /displays`
+
+**Authentication:** Required (if `ADMIN_PASSWORD` is set)
+
+**Response:**
+```json
+[
+  {
+    "id": "wall-1",
+    "name": "Main Wall",
+    "_count": {
+      "screens": 4
+    }
+  },
+  {
+    "id": "signage-1",
+    "name": "Digital Signage",
+    "_count": {
+      "screens": 2
+    }
+  }
+]
+```
+
+---
+
+### 2. Get Screens
 
 Returns a list of all available screens.
 
@@ -37,18 +67,20 @@ Returns a list of all available screens.
 [
   {
     "id": "scr_123abc_xyz",
-    "name": "Screen 1"
+    "name": "Screen 1",
+    "displayId": "wall-1"
   },
   {
     "id": "scr_456def_abc",
-    "name": "Screen 2"
+    "name": "Screen 2",
+    "displayId": "wall-1"
   }
 ]
 ```
 
 ---
 
-### 2. Get Scenarios
+### 3. Get Scenarios
 
 Returns a list of all available scenarios.
 
@@ -72,7 +104,7 @@ Returns a list of all available scenarios.
 
 ---
 
-### 3. Get Presets
+### 4. Get Presets
 
 Returns a list of all available presets.
 
@@ -96,7 +128,7 @@ Returns a list of all available presets.
 
 ---
 
-### 4. Set Screen Content
+### 5. Set Screen Content
 
 Sets the content for a specific screen.
 
@@ -128,7 +160,7 @@ curl -X POST http://localhost:8080/api/companion/screens/scr_123abc_xyz/content 
 
 ---
 
-### 5. Trigger Scenario
+### 6. Trigger Scenario
 
 Triggers a scenario for a specific screen.
 
@@ -161,7 +193,7 @@ curl -X POST http://localhost:8080/api/companion/scenarios/trigger \
 
 ---
 
-### 6. Trigger Preset
+### 7. Trigger Preset
 
 Activates a preset (updates all screens defined in the preset).
 
