@@ -21,7 +21,7 @@ export async function broadcastState() {
         return;
     }
 
-    const states = await prisma.screenState.findMany();
+    const states = await prisma.screenState.findMany() ?? [];
     const stateMap: ScreenStateMap = {};
 
     for (const state of states) {
@@ -37,7 +37,7 @@ export async function broadcastState() {
         screens: stateMap,
     });
 
-    wssInstance.clients.forEach((client) => {
+    wssInstance.clients?.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
             client.send(payload);
         }
