@@ -12,7 +12,9 @@
         "db:seed": "dotenv -e ../.env -- tsx prisma/seed.ts",
         "lint": "eslint src/**",
         "lint:fix": "eslint src/** --fix",
-        "test": "echo \"No tests specified yet\" && exit 0"
+        "test": "vitest",
+        "test:run": "vitest run",
+        "test:coverage": "vitest run --coverage"
     },
     "dependencies": {
         "@prisma/client": "^6.0.0",
@@ -37,8 +39,10 @@
         "eslint": "^9.39.2",
         "globals": "^17.0.0",
         "prisma": "^6.0.0",
+        "supertest": "^7.2.2",
         "tsx": "^4.19.0",
         "typescript": "^5.7.0",
-        "typescript-eslint": "^8.53.0"
+        "typescript-eslint": "^8.53.0",
+        "vitest": "^4.0.17"
     }
 }
