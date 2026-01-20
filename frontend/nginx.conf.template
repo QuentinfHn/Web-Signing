@@ -11,6 +11,14 @@ server {
     # SPA - route all requests to index.html
     location / {
         try_files $uri $uri/ /index.html;
+        # Disable cache for index.html so updates are seen immediately
+        add_header Cache-Control "no-store, no-cache, must-revalidate";
+    }
+
+    # Vite assets are hashed, so they can be cached forever
+    location /assets {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
     }
 
     # Proxy API to backend
