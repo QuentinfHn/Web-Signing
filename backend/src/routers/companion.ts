@@ -78,12 +78,115 @@ router.get("/scenarios", requireCompanionAuth, async (req, res) => {
 router.get("/presets", requireCompanionAuth, async (req, res) => {
     try {
         const presets = await prisma.preset.findMany({
-            select: { id: true, name: true },
+            orderBy: { createdAt: "asc" },
         });
-        res.json(presets);
+        const result = presets.map((p) => ({
+            id: p.id,
+            name: p.name,
+            scenarios: JSON.parse(p.scenarios) as Record<string, string>,
+        }));
+        res.json(result);
     } catch (error) {
         logger.error("Error fetching presets:", error);
         res.status(500).json({ error: "Failed to fetch presets" });
+    }
+});
+
+// Create a new preset
+router.post("/presets", requireCompanionAuth, async (req, res) => {
+    try {
+        const { name, scenarios } = req.body;
+
+        if (typeof name !== "string" || !name.trim()) {
+            res.status(400).json({ error: "name is required" });
+            return;
+        }
+
+        if (typeof scenarios !== "object" || scenarios === null) {
+            res.status(400).json({ error: "scenarios object is required" });
+            return;
+        }
+
+        const preset = await prisma.preset.create({
+            data: {
+                name: name.trim(),
+                scenarios: JSON.stringify(scenarios),
+            },
+        });
+
+        res.status(201).json({
+            id: preset.id,
+            name: preset.name,
+            scenarios: scenarios as Record<string, string>,
+        });
+    } catch (error) {
+        logger.error("Error creating preset:", error);
+        res.status(500).json({ error: "Failed to create preset" });
+    }
+});
+
+// Update an existing preset
+router.put("/presets/:id", requireCompanionAuth, async (req, res) => {
+    try {
+        const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+        const { name, scenarios } = req.body;
+
+        const existing = await prisma.preset.findUnique({ where: { id } });
+        if (!existing) {
+            res.status(404).json({ error: "Preset not found" });
+            return;
+        }
+
+        const data: { name?: string; scenarios?: string } = {};
+
+        if (name !== undefined) {
+            if (typeof name !== "string" || !name.trim()) {
+                res.status(400).json({ error: "name must be a non-empty string" });
+                return;
+            }
+            data.name = name.trim();
+        }
+
+        if (scenarios !== undefined) {
+            if (typeof scenarios !== "object" || scenarios === null) {
+                res.status(400).json({ error: "scenarios must be an object" });
+                return;
+            }
+            data.scenarios = JSON.stringify(scenarios);
+        }
+
+        const preset = await prisma.preset.update({
+            where: { id },
+            data,
+        });
+
+        res.json({
+            id: preset.id,
+            name: preset.name,
+            scenarios: JSON.parse(preset.scenarios) as Record<string, string>,
+        });
+    } catch (error) {
+        logger.error("Error updating preset:", error);
+        res.status(500).json({ error: "Failed to update preset" });
+    }
+});
+
+// Delete a preset
+router.delete("/presets/:id", requireCompanionAuth, async (req, res) => {
+    try {
+        const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+        const existing = await prisma.preset.findUnique({ where: { id } });
+        if (!existing) {
+            res.status(404).json({ error: "Preset not found" });
+            return;
+        }
+
+        await prisma.preset.delete({ where: { id } });
+        res.json({ success: true });
+    } catch (error) {
+        logger.error("Error deleting preset:", error);
+        res.status(500).json({ error: "Failed to delete preset" });
     }
 });
 
@@ -173,20 +276,32 @@ router.post("/presets/trigger", requireCompanionAuth, async (req, res) => {
             return;
         }
 
-        let screens: Record<string, string>;
+        let scenarios: Record<string, string>;
         try {
-            screens = JSON.parse(preset.screens);
+            scenarios = JSON.parse(preset.scenarios);
         } catch {
             res.status(500).json({ error: "Invalid preset data" });
             return;
         }
 
-        for (const [screenId, imageSrc] of Object.entries(screens)) {
-            await prisma.screenState.upsert({
-                where: { screenId },
-                update: { imageSrc },
-                create: { screenId, imageSrc },
+        // For each screenId/scenarioName, look up the ScenarioAssignment to get imagePath
+        for (const [screenId, scenarioName] of Object.entries(scenarios)) {
+            const assignment = await prisma.scenarioAssignment.findUnique({
+                where: {
+                    screenId_scenario: {
+                        screenId,
+                        scenario: scenarioName,
+                    },
+                },
             });
+
+            if (assignment) {
+                await prisma.screenState.upsert({
+                    where: { screenId },
+                    update: { imageSrc: assignment.imagePath },
+                    create: { screenId, imageSrc: assignment.imagePath },
+                });
+            }
         }
 
         await broadcastState();

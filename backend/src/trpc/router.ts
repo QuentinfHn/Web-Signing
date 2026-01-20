@@ -359,12 +359,66 @@ export const screenRouter = router({
 // Preset router
 export const presetRouter = router({
     list: publicProcedure.query(async () => {
-        const presets = await prisma.preset.findMany();
-        return presets.map((p: { id: string; name: string; screens: string }) => ({
+        const presets = await prisma.preset.findMany({
+            orderBy: { createdAt: "asc" },
+        });
+        return presets.map((p: { id: string; name: string; scenarios: string; createdAt: Date; updatedAt: Date }) => ({
             ...p,
-            screens: z.record(z.string(), z.string()).parse(JSON.parse(p.screens)),
+            scenarios: z.record(z.string(), z.string()).parse(JSON.parse(p.scenarios)),
         }));
     }),
+
+    create: protectedProcedure
+        .input(z.object({
+            name: z.string().min(1),
+            scenarios: z.record(z.string(), z.string()),
+        }))
+        .mutation(async ({ input }) => {
+            const preset = await prisma.preset.create({
+                data: {
+                    name: input.name,
+                    scenarios: JSON.stringify(input.scenarios),
+                },
+            });
+            return {
+                ...preset,
+                scenarios: input.scenarios,
+            };
+        }),
+
+    update: protectedProcedure
+        .input(z.object({
+            id: z.string(),
+            name: z.string().min(1).optional(),
+            scenarios: z.record(z.string(), z.string()).optional(),
+        }))
+        .mutation(async ({ input }) => {
+            const { id, name, scenarios } = input;
+            const data: { name?: string; scenarios?: string } = {};
+
+            if (name !== undefined) {
+                data.name = name;
+            }
+            if (scenarios !== undefined) {
+                data.scenarios = JSON.stringify(scenarios);
+            }
+
+            const preset = await prisma.preset.update({
+                where: { id },
+                data,
+            });
+            return {
+                ...preset,
+                scenarios: z.record(z.string(), z.string()).parse(JSON.parse(preset.scenarios)),
+            };
+        }),
+
+    delete: protectedProcedure
+        .input(z.object({ id: z.string() }))
+        .mutation(async ({ input }) => {
+            await prisma.preset.delete({ where: { id: input.id } });
+            return { success: true };
+        }),
 
     activate: protectedProcedure
         .input(z.object({ presetId: z.string() }))
@@ -374,10 +428,28 @@ export const presetRouter = router({
             });
             if (!preset) throw new Error("Preset not found");
 
-            const screens = z.record(z.string(), z.string()).parse(JSON.parse(preset.screens));
+            const scenarios = z.record(z.string(), z.string()).parse(JSON.parse(preset.scenarios));
+
+            // For each screenId/scenarioName, look up the ScenarioAssignment to get imagePath
+            const updates: { screenId: string; imageSrc: string }[] = [];
+
+            for (const [screenId, scenarioName] of Object.entries(scenarios)) {
+                const assignment = await prisma.scenarioAssignment.findUnique({
+                    where: {
+                        screenId_scenario: {
+                            screenId,
+                            scenario: scenarioName,
+                        },
+                    },
+                });
+
+                if (assignment) {
+                    updates.push({ screenId, imageSrc: assignment.imagePath });
+                }
+            }
 
             // Update all screen states
-            for (const [screenId, imageSrc] of Object.entries(screens)) {
+            for (const { screenId, imageSrc } of updates) {
                 await prisma.screenState.upsert({
                     where: { screenId },
                     update: { imageSrc },
@@ -385,7 +457,11 @@ export const presetRouter = router({
                 });
             }
 
-            return { success: true, screens };
+            // Broadcast state changes via WebSocket
+            const { broadcastState } = await import("../services/screenState.js");
+            await broadcastState();
+
+            return { success: true, activated: updates.length };
         }),
 });
 

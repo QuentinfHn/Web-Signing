@@ -30,9 +30,11 @@ model Screen {
 }
 
 model Preset {
-  id      String @id @default(cuid())
-  name    String
-  screens String // JSON string: { screenId: imagePath }
+  id        String   @id @default(cuid())
+  name      String
+  scenarios String   // JSON string: { screenId: scenarioName }
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model ScreenState {

@@ -8,6 +8,106 @@ import AdvancedContentSelector from "../components/AdvancedContentSelector";
 
 type ScenarioAssignments = Record<string, Record<string, string>>;
 
+interface PresetModalProps {
+    preset?: Preset;
+    screens: Screen[];
+    displays: Display[];
+    scenarios: string[];
+    onSave: (name: string, scenarioMappings: Record<string, string>) => void;
+    onClose: () => void;
+}
+
+const PresetModal = ({ preset, screens, displays, scenarios, onSave, onClose }: PresetModalProps) => {
+    const [name, setName] = useState(preset?.name || "");
+    const [scenarioMappings, setScenarioMappings] = useState<Record<string, string>>(
+        preset?.scenarios || {}
+    );
+
+    const handleScenarioChange = (screenId: string, scenario: string) => {
+        setScenarioMappings(prev => {
+            if (scenario === "") {
+                const { [screenId]: _, ...rest } = prev;
+                return rest;
+            }
+            return { ...prev, [screenId]: scenario };
+        });
+    };
+
+    const handleSave = () => {
+        if (!name.trim()) {
+            alert("Voer een naam in");
+            return;
+        }
+        onSave(name.trim(), scenarioMappings);
+    };
+
+    // Group screens by displayId
+    const screensByDisplay = screens.reduce<Record<string, Screen[]>>((acc, screen) => {
+        if (!acc[screen.displayId]) {
+            acc[screen.displayId] = [];
+        }
+        acc[screen.displayId].push(screen);
+        return acc;
+    }, {});
+
+    const getDisplayName = (displayId: string): string => {
+        const display = displays.find(d => d.id === displayId);
+        return display?.name || displayId;
+    };
+
+    return (
+        <div className="modal-overlay">
+            <div className="modal-content preset-modal">
+                <h3>{preset ? "Preset Bewerken" : "Nieuwe Preset"}</h3>
+                <div className="form-group">
+                    <label>Naam:</label>
+                    <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="modal-input"
+                        placeholder="Preset naam"
+                        autoFocus
+                    />
+                </div>
+                <div className="form-group">
+                    <label>Scenario per scherm:</label>
+                    <div className="preset-screens-grid">
+                        {Object.entries(screensByDisplay).map(([displayId, displayScreens]) => (
+                            <div key={displayId} className="preset-display-group">
+                                <div className="preset-display-header">
+                                    {getDisplayName(displayId)}
+                                </div>
+                                {displayScreens.map((screen) => (
+                                    <div key={screen.id} className="preset-screen-row">
+                                        <span className="preset-screen-name">{screen.name || screen.id}</span>
+                                        <select
+                                            value={scenarioMappings[screen.id] || ""}
+                                            onChange={(e) => handleScenarioChange(screen.id, e.target.value)}
+                                            className="modal-select"
+                                        >
+                                            <option value="">-- Geen --</option>
+                                            {scenarios.map((scenario) => (
+                                                <option key={scenario} value={scenario}>
+                                                    {scenario}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                ))}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                <div className="modal-actions">
+                    <button onClick={onClose} className="btn-secondary">Annuleren</button>
+                    <button onClick={handleSave} className="btn-primary">Opslaan</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 interface SceneSettingsModalProps {
     scenarioName: string;
     currentPath: string | undefined;
@@ -61,10 +161,16 @@ export default function Control() {
     const [scenarios, setScenarios] = useState<string[]>([]);
     const [displays, setDisplays] = useState<Display[]>([]);
 
-    // State for modal
+    // State for scene settings modal
     const [editingState, setEditingState] = useState<{
         screenId: string;
         scenario: string;
+    } | null>(null);
+
+    // State for preset modal
+    const [presetModal, setPresetModal] = useState<{
+        mode: "create" | "edit";
+        preset?: Preset;
     } | null>(null);
 
     const handleStateUpdate = useCallback((state: ScreenState) => {
@@ -98,12 +204,51 @@ export default function Control() {
         setImage(screenId, src);
     };
 
-    const handlePresetClick = (preset: Preset) => {
-        Object.entries(preset.screens).forEach(([screenId, src]) => {
-            if (typeof src === 'string') {
-                setImage(screenId, src);
-            }
-        });
+    const handlePresetClick = async (preset: Preset) => {
+        try {
+            await trpcClient.presets.activate.mutate({ presetId: preset.id });
+        } catch (error) {
+            console.error("Failed to activate preset:", error);
+            alert("Activeren mislukt: " + (error instanceof Error ? error.message : "Onbekende fout"));
+        }
+    };
+
+    const handleCreatePreset = async (name: string, scenarios: Record<string, string>) => {
+        try {
+            const newPreset = await trpcClient.presets.create.mutate({ name, scenarios });
+            setPresets(prev => [...prev, newPreset]);
+            setPresetModal(null);
+        } catch (error) {
+            console.error("Failed to create preset:", error);
+            alert("Aanmaken mislukt: " + (error instanceof Error ? error.message : "Onbekende fout"));
+        }
+    };
+
+    const handleUpdatePreset = async (name: string, scenarios: Record<string, string>) => {
+        if (!presetModal?.preset) return;
+        try {
+            const updated = await trpcClient.presets.update.mutate({
+                id: presetModal.preset.id,
+                name,
+                scenarios,
+            });
+            setPresets(prev => prev.map(p => p.id === updated.id ? updated : p));
+            setPresetModal(null);
+        } catch (error) {
+            console.error("Failed to update preset:", error);
+            alert("Bijwerken mislukt: " + (error instanceof Error ? error.message : "Onbekende fout"));
+        }
+    };
+
+    const handleDeletePreset = async (preset: Preset) => {
+        if (!confirm(`Weet je zeker dat je "${preset.name}" wilt verwijderen?`)) return;
+        try {
+            await trpcClient.presets.delete.mutate({ id: preset.id });
+            setPresets(prev => prev.filter(p => p.id !== preset.id));
+        } catch (error) {
+            console.error("Failed to delete preset:", error);
+            alert("Verwijderen mislukt: " + (error instanceof Error ? error.message : "Onbekende fout"));
+        }
     };
 
     const handleSaveSettings = async (screenId: string, oldScenarioName: string, newName: string, newPath: string) => {
@@ -153,13 +298,6 @@ export default function Control() {
             handleRadioChange(screenId, imagePath);
         }
     };
-
-    const platielPresets = presets.filter((p) =>
-        p.name.toLowerCase().includes("platielstraat")
-    );
-    const koestraatPresets = presets.filter((p) =>
-        p.name.toLowerCase().includes("koestraat")
-    );
 
     const getScenarioPath = (screenId: string, scenario: string): string | undefined => {
         return scenarioAssignments[screenId]?.[scenario];
@@ -262,36 +400,55 @@ export default function Control() {
             ))}
 
             <section className="control-section">
-                <h2>🎬 Platielstraat Presets</h2>
+                <div className="section-header">
+                    <h2>🎬 Presets</h2>
+                    <button
+                        className="btn-primary btn-small"
+                        onClick={() => setPresetModal({ mode: "create" })}
+                    >
+                        + Nieuw
+                    </button>
+                </div>
                 <div className="presets-container">
-                    {platielPresets.map((preset) => (
-                        <button
-                            key={preset.id}
-                            className="preset-button"
-                            onClick={() => handlePresetClick(preset)}
-                        >
-                            {preset.name.replace("Platielstraat – ", "")}
-                        </button>
+                    {presets.map((preset) => (
+                        <div key={preset.id} className="preset-item">
+                            <button
+                                className="preset-button"
+                                onClick={() => handlePresetClick(preset)}
+                            >
+                                {preset.name}
+                            </button>
+                            <div className="preset-actions">
+                                <button
+                                    className="btn-icon btn-edit"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setPresetModal({ mode: "edit", preset });
+                                    }}
+                                    title="Bewerken"
+                                >
+                                    ✏️
+                                </button>
+                                <button
+                                    className="btn-icon btn-delete"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeletePreset(preset);
+                                    }}
+                                    title="Verwijderen"
+                                >
+                                    🗑️
+                                </button>
+                            </div>
+                        </div>
                     ))}
+                    {presets.length === 0 && (
+                        <p className="empty-message-inline">Geen presets. Maak er een aan!</p>
+                    )}
                 </div>
             </section>
 
-            <section className="control-section">
-                <h2>🎬 Koestraat Presets</h2>
-                <div className="presets-container">
-                    {koestraatPresets.map((preset) => (
-                        <button
-                            key={preset.id}
-                            className="preset-button"
-                            onClick={() => handlePresetClick(preset)}
-                        >
-                            {preset.name.replace("Koestraat – ", "")}
-                        </button>
-                    ))}
-                </div>
-            </section>
-
-            {/* Modal */}
+            {/* Scene Settings Modal */}
             {editingState && (
                 <SceneSettingsModal
                     scenarioName={editingState.scenario}
@@ -304,6 +461,18 @@ export default function Control() {
                             prev.map(c => c.id === updatedContent.id ? updatedContent : c)
                         );
                     }}
+                />
+            )}
+
+            {/* Preset Modal */}
+            {presetModal && (
+                <PresetModal
+                    preset={presetModal.preset}
+                    screens={screens}
+                    displays={displays}
+                    scenarios={scenarios}
+                    onSave={presetModal.mode === "create" ? handleCreatePreset : handleUpdatePreset}
+                    onClose={() => setPresetModal(null)}
                 />
             )}
         </div>
