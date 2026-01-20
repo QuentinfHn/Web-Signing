@@ -2,7 +2,6 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
 import ProtectedRoute from '../../components/ProtectedRoute'
-import LoginModal from '../../components/LoginModal'
 import { AuthProvider, useAuth } from '../../context/AuthContext'
 
 vi.mock('../../context/AuthContext', async (importOriginal) => {
@@ -36,6 +35,7 @@ describe('ProtectedRoute', () => {
         isLoading: true,
         login: vi.fn(),
         logout: vi.fn(),
+        getToken: vi.fn(() => null),
       })
 
       renderWithProviders(<ProtectedRoute>{testChildren}</ProtectedRoute>)
@@ -51,6 +51,7 @@ describe('ProtectedRoute', () => {
         isLoading: true,
         login: vi.fn(),
         logout: vi.fn(),
+        getToken: vi.fn(() => null),
       })
 
       renderWithProviders(<ProtectedRoute>{testChildren}</ProtectedRoute>)
@@ -68,6 +69,7 @@ describe('ProtectedRoute', () => {
         isLoading: false,
         login: vi.fn(),
         logout: vi.fn(),
+        getToken: vi.fn(() => null),
       })
 
       renderWithProviders(<ProtectedRoute>{testChildren}</ProtectedRoute>)
@@ -82,6 +84,7 @@ describe('ProtectedRoute', () => {
         isLoading: false,
         login: vi.fn(),
         logout: vi.fn(),
+        getToken: vi.fn(() => null),
       })
 
       renderWithProviders(<ProtectedRoute>{testChildren}</ProtectedRoute>)
@@ -96,6 +99,7 @@ describe('ProtectedRoute', () => {
         isLoading: false,
         login: vi.fn(),
         logout: vi.fn(),
+        getToken: vi.fn(() => null),
       })
 
       renderWithProviders(<ProtectedRoute>{testChildren}</ProtectedRoute>)
@@ -112,6 +116,7 @@ describe('ProtectedRoute', () => {
         isLoading: false,
         login: vi.fn(),
         logout: vi.fn(),
+        getToken: vi.fn(() => null),
       })
 
       renderWithProviders(<ProtectedRoute>{testChildren}</ProtectedRoute>)
@@ -126,6 +131,7 @@ describe('ProtectedRoute', () => {
         isLoading: false,
         login: vi.fn(),
         logout: vi.fn(),
+        getToken: vi.fn(() => null),
       })
 
       renderWithProviders(<ProtectedRoute>{testChildren}</ProtectedRoute>)
@@ -140,6 +146,7 @@ describe('ProtectedRoute', () => {
         isLoading: false,
         login: vi.fn(),
         logout: vi.fn(),
+        getToken: vi.fn(() => null),
       })
 
       renderWithProviders(
@@ -160,6 +167,7 @@ describe('ProtectedRoute', () => {
         isLoading: false,
         login: vi.fn(),
         logout: vi.fn(),
+        getToken: vi.fn(() => null),
       })
 
       renderWithProviders(<ProtectedRoute>{testChildren}</ProtectedRoute>)
@@ -174,6 +182,7 @@ describe('ProtectedRoute', () => {
         isLoading: false,
         login: vi.fn(),
         logout: vi.fn(),
+        getToken: vi.fn(() => null),
       })
 
       renderWithProviders(<ProtectedRoute>{testChildren}</ProtectedRoute>)
@@ -188,6 +197,7 @@ describe('ProtectedRoute', () => {
         isLoading: false,
         login: vi.fn(),
         logout: vi.fn(),
+        getToken: vi.fn(() => null),
       })
 
       renderWithProviders(<ProtectedRoute>{testChildren}</ProtectedRoute>)
@@ -205,6 +215,7 @@ describe('ProtectedRoute', () => {
         isLoading: false,
         login: vi.fn(),
         logout: vi.fn(),
+        getToken: vi.fn(() => null),
       })
 
       renderWithProviders(
@@ -227,6 +238,7 @@ describe('ProtectedRoute', () => {
         isLoading: false,
         login: vi.fn(),
         logout: vi.fn(),
+        getToken: vi.fn(() => null),
       })
 
       renderWithProviders(
@@ -251,6 +263,7 @@ describe('ProtectedRoute', () => {
         isLoading: false,
         login: vi.fn(),
         logout: vi.fn(),
+        getToken: vi.fn(() => null),
       })
 
       renderWithProviders(<ProtectedRoute>{null}</ProtectedRoute>)
@@ -265,6 +278,7 @@ describe('ProtectedRoute', () => {
         isLoading: false,
         login: vi.fn(),
         logout: vi.fn(),
+        getToken: vi.fn(() => null),
       })
 
       renderWithProviders(
@@ -287,6 +301,7 @@ describe('ProtectedRoute', () => {
         isLoading: true,
         login: vi.fn(),
         logout: vi.fn(),
+        getToken: vi.fn(() => null),
       })
 
       renderWithProviders(<ProtectedRoute>{testChildren}</ProtectedRoute>)

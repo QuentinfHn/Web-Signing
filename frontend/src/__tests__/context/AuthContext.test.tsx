@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, waitFor } from '@testing-library/react'
 import { AuthProvider, useAuth } from '../../context/AuthContext'
 
 const { trpcClient } = await import('../../utils/trpc')
@@ -52,7 +52,7 @@ describe('AuthContext', () => {
         authRequired: true,
       })
 
-      const { result } = renderWithHook()
+      renderWithHook()
 
       await waitFor(() => {
         expect(trpcClient.auth.verify.query).toHaveBeenCalled()
@@ -136,7 +136,7 @@ describe('AuthContext', () => {
       })
       vi.mocked(trpcClient.auth.login.mutate).mockResolvedValue({
         success: true,
-        token: undefined,
+        token: null,
       })
 
       const { result } = renderWithHook()
@@ -163,6 +163,7 @@ describe('AuthContext', () => {
       })
       vi.mocked(trpcClient.auth.login.mutate).mockResolvedValue({
         success: false,
+        token: null,
       })
 
       const { result } = renderWithHook()
@@ -348,8 +349,13 @@ describe('AuthContext', () => {
     it('throws error when used outside provider', () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { })
 
+      function TestComponent() {
+        useAuth()
+        return <div>test</div>
+      }
+
       expect(() => {
-        render(<div>{useAuth()}</div>)
+        render(<TestComponent />)
       }).toThrow()
 
       consoleErrorSpy.mockRestore()
