@@ -62,13 +62,8 @@ export default function MapOverview() {
     // Default center (Maastricht roughly, or average of screens)
     const center: [number, number] = [50.8514, 5.6910];
 
-    const getScenarioName = (screenId: string, currentSrc: string | null) => {
-        if (!currentSrc) return "Uit";
-        const screenScenarios = scenarios[screenId];
-        if (!screenScenarios) return "Onbekend";
-
-        const entry = Object.entries(screenScenarios).find(([_, src]) => src === currentSrc);
-        return entry ? entry[0] : "Handmatige content";
+    const getScenarioName = (screenId: string) => {
+        return screenStates[screenId]?.scenario || "Uit";
     };
 
     const handleSidebarClick = (screenId: string) => {
@@ -115,7 +110,7 @@ export default function MapOverview() {
                                     <div className="map-popup">
                                         <h3>{screen.name || screen.id}</h3>
                                         <p><strong>Display:</strong> {screen.displayId}</p>
-                                        <p><strong>Status:</strong> {screenStates[screen.id]?.src ? "▶ " + getScenarioName(screen.id, screenStates[screen.id]?.src || null) : "⏾ Uit"}</p>
+                                        <p><strong>Status:</strong> {screenStates[screen.id]?.scenario ? "▶ " + getScenarioName(screen.id) : "⏾ Uit"}</p>
                                         {screen.address && <p><strong>Adres:</strong> {screen.address}</p>}
                                     </div>
                                 </Popup>
@@ -128,8 +123,8 @@ export default function MapOverview() {
                     <h2>Actieve Schermen</h2>
                     <div className="screen-list">
                         {locatedScreens.map(screen => {
-                            const isLive = !!screenStates[screen.id]?.src;
-                            const statusLabel = getScenarioName(screen.id, screenStates[screen.id]?.src || null);
+                            const isLive = !!screenStates[screen.id]?.scenario;
+                            const statusLabel = getScenarioName(screen.id);
 
                             return (
                                 <div

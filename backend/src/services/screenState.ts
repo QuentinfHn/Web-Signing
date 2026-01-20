@@ -4,6 +4,7 @@ import { prisma } from "../prisma/client.js";
 export interface ScreenStateMap {
     [screenId: string]: {
         src: string | null;
+        scenario: string | null;
         updated: Date;
     };
 }
@@ -26,6 +27,7 @@ export async function broadcastState() {
     for (const state of states) {
         stateMap[state.screenId] = {
             src: state.imageSrc,
+            scenario: state.scenario,
             updated: state.updatedAt,
         };
     }

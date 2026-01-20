@@ -40,6 +40,7 @@ model Preset {
 model ScreenState {
   screenId  String   @id
   imageSrc  String?
+  scenario  String?
   updatedAt DateTime @updatedAt
 }
 

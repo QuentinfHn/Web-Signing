@@ -23,6 +23,12 @@ const PresetModal = ({ preset, screens, displays, scenarios, onSave, onClose }: 
         preset?.scenarios || {}
     );
 
+    // Reset state when preset changes (switching between create/edit or different presets)
+    useEffect(() => {
+        setName(preset?.name || "");
+        setScenarioMappings(preset?.scenarios || {});
+    }, [preset?.id]);
+
     const handleScenarioChange = (screenId: string, scenario: string) => {
         setScenarioMappings(prev => {
             if (scenario === "") {
@@ -171,6 +177,7 @@ export default function Control() {
     const [presetModal, setPresetModal] = useState<{
         mode: "create" | "edit";
         preset?: Preset;
+        timestamp?: number;
     } | null>(null);
 
     const handleStateUpdate = useCallback((state: ScreenState) => {
@@ -200,8 +207,8 @@ export default function Control() {
         }).catch(console.error);
     }, []);
 
-    const handleRadioChange = (screenId: string, src: string) => {
-        setImage(screenId, src);
+    const handleRadioChange = (screenId: string, src: string, scenario?: string) => {
+        setImage(screenId, src, scenario);
     };
 
     const handlePresetClick = async (preset: Preset) => {
@@ -293,9 +300,9 @@ export default function Control() {
         }
     };
 
-    const handleRowClick = (screenId: string, imagePath: string | undefined) => {
+    const handleRowClick = (screenId: string, scenario: string, imagePath: string | undefined) => {
         if (imagePath) {
-            handleRadioChange(screenId, imagePath);
+            handleRadioChange(screenId, imagePath, scenario);
         }
     };
 
@@ -345,7 +352,7 @@ export default function Control() {
                                                     type="radio"
                                                     name={screen.id}
                                                     value=""
-                                                    checked={!screenStates[screen.id]?.src}
+                                                    checked={!screenStates[screen.id]?.scenario}
                                                     onChange={() => handleRadioChange(screen.id, "")}
                                                 />
                                                 <span className="scenario-name scenario-off">⭘ Uit</span>
@@ -354,13 +361,13 @@ export default function Control() {
                                     </div>
                                     {scenarios.map((scenario) => {
                                         const imagePath = getScenarioPath(screen.id, scenario);
-                                        const isSelected = !!imagePath && screenStates[screen.id]?.src === imagePath;
+                                        const isSelected = screenStates[screen.id]?.scenario === scenario;
 
                                         return (
                                             <div key={scenario} className="scenario-row">
                                                 <div
                                                     className={`radio-option clickable-row ${isSelected ? 'selected' : ''} ${!imagePath ? 'disabled' : ''}`}
-                                                    onClick={() => handleRowClick(screen.id, imagePath)}
+                                                    onClick={() => handleRowClick(screen.id, scenario, imagePath)}
                                                 >
                                                     <input
                                                         type="radio"
@@ -404,7 +411,7 @@ export default function Control() {
                     <h2>🎬 Presets</h2>
                     <button
                         className="btn-primary btn-small"
-                        onClick={() => setPresetModal({ mode: "create" })}
+                        onClick={() => setPresetModal({ mode: "create", timestamp: Date.now() })}
                     >
                         + Nieuw
                     </button>
@@ -467,6 +474,7 @@ export default function Control() {
             {/* Preset Modal */}
             {presetModal && (
                 <PresetModal
+                    key={presetModal.preset?.id || `new-${presetModal.timestamp}`}
                     preset={presetModal.preset}
                     screens={screens}
                     displays={displays}

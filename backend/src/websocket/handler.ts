@@ -42,6 +42,7 @@ export function createWebSocketHandler(wss: WebSocketServer) {
         for (const state of states) {
             stateMap[state.screenId] = {
                 src: state.imageSrc,
+                scenario: state.scenario,
                 updated: state.updatedAt,
             };
         }
@@ -60,8 +61,8 @@ export function createWebSocketHandler(wss: WebSocketServer) {
                 if (data.type === "setImage") {
                     await prisma.screenState.upsert({
                         where: { screenId: data.screen },
-                        update: { imageSrc: data.src },
-                        create: { screenId: data.screen, imageSrc: data.src },
+                        update: { imageSrc: data.src, scenario: data.scenario || null },
+                        create: { screenId: data.screen, imageSrc: data.src, scenario: data.scenario || null },
                     });
 
                     await broadcastState();

@@ -431,7 +431,7 @@ export const presetRouter = router({
             const scenarios = z.record(z.string(), z.string()).parse(JSON.parse(preset.scenarios));
 
             // For each screenId/scenarioName, look up the ScenarioAssignment to get imagePath
-            const updates: { screenId: string; imageSrc: string }[] = [];
+            const updates: { screenId: string; imageSrc: string; scenario: string }[] = [];
 
             for (const [screenId, scenarioName] of Object.entries(scenarios)) {
                 const assignment = await prisma.scenarioAssignment.findUnique({
@@ -444,16 +444,16 @@ export const presetRouter = router({
                 });
 
                 if (assignment) {
-                    updates.push({ screenId, imageSrc: assignment.imagePath });
+                    updates.push({ screenId, imageSrc: assignment.imagePath, scenario: scenarioName });
                 }
             }
 
             // Update all screen states
-            for (const { screenId, imageSrc } of updates) {
+            for (const { screenId, imageSrc, scenario } of updates) {
                 await prisma.screenState.upsert({
                     where: { screenId },
-                    update: { imageSrc },
-                    create: { screenId, imageSrc },
+                    update: { imageSrc, scenario },
+                    create: { screenId, imageSrc, scenario },
                 });
             }
 

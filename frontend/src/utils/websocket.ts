@@ -3,6 +3,7 @@ import { useEffect, useRef, useCallback, useState } from "react";
 export interface ScreenState {
     [screenId: string]: {
         src: string | null;
+        scenario: string | null;
         updated: Date | string;
     };
 }
@@ -126,8 +127,8 @@ export function useWebSocket(onStateUpdate: (state: ScreenState) => void) {
         }
     }, []);
 
-    const setImage = useCallback((screen: string, src: string) => {
-        sendMessage("setImage", { screen, src });
+    const setImage = useCallback((screen: string, src: string, scenario?: string) => {
+        sendMessage("setImage", { screen, src, scenario });
     }, [sendMessage]);
 
     return { connected, reconnecting, setImage };
