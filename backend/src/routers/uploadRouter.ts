@@ -12,7 +12,7 @@ import { ALLOWED_MIME_TYPES } from "../config/upload.js";
 const router = express.Router();
 router.use(uploadRateLimiter);
 
-const contentPath = path.join(process.cwd(), "content");
+const contentPath = path.join(process.cwd(), "..", "content");
 
 const upload = multer({
     storage: multer.diskStorage({

@@ -67,8 +67,8 @@ app.use(
 // Companion API endpoints
 app.use("/api/companion", companionRouter);
 
-// Serve static content (images)
-const contentPath = path.join(__dirname, "../../content");
+// Serve static content (images) - use root content folder for intuitive manual file placement
+const contentPath = path.join(process.cwd(), "..", "content");
 app.use("/content", express.static(contentPath));
 
 // Upload API endpoints
