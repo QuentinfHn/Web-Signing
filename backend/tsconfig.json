@@ -14,13 +14,18 @@
         "forceConsistentCasingInFileNames": true,
         "resolveJsonModule": true,
         "declaration": true,
-        "types": ["vitest/globals", "node"]
+        "types": [
+            "vitest/globals",
+            "node"
+        ]
     },
     "include": [
         "src/**/*"
     ],
     "exclude": [
         "node_modules",
-        "dist"
+        "dist",
+        "src/__tests__",
+        "src/**/*.test.ts"
     ]
 }

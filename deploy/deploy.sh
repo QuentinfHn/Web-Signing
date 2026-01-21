@@ -1,11 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Enable BuildKit for faster builds with cache mounts
-export DOCKER_BUILDKIT=1
-export COMPOSE_DOCKER_CLI_BUILD=1
-
-# Deploys LED Signage Controller using docker-compose
+# Deploys LED Signage Controller using pre-built images from GHCR
 # Run this on the server from the repo root:
 #   ./deploy/deploy.sh
 
@@ -27,14 +23,9 @@ fi
 
 cd "$ROOT_DIR"
 
-# Pull latest images/base layers
-echo "==> Pulling base images..."
-docker compose --env-file "$ENV_FILE" $COMPOSE_PROFILES pull --ignore-pull-failures
-
-# Build sequentially to avoid OOM on small droplets
-echo "==> Building services sequentially..."
-docker compose --env-file "$ENV_FILE" build backend
-docker compose --env-file "$ENV_FILE" build frontend
+# Pull pre-built images from GHCR
+echo "==> Pulling images from GHCR..."
+docker compose --env-file "$ENV_FILE" $COMPOSE_PROFILES pull
 
 # Start services
 echo "==> Starting services..."
