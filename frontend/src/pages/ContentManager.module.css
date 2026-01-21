@@ -13,6 +13,27 @@
     margin-bottom: 2rem;
 }
 
+.headerActions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.scanBtn {
+    padding: 0.5rem 1rem;
+    background: var(--accent);
+    color: white;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.scanBtn:hover {
+    background: var(--accent-hover);
+}
+
 .title {
     font-size: 2rem;
     background: linear-gradient(135deg, var(--accent), #8b5cf6);
@@ -176,4 +197,46 @@
 
 .renameBtn:hover {
     background: rgba(99, 102, 241, 0.2);
+}
+
+/* Toast Notification */
+.toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 1rem 2rem;
+    border-radius: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    z-index: 1000;
+    animation: slideUp 0.3s ease;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.toast.success {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+}
+
+.toast.info {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+}
+
+.toast.error {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
 }

@@ -40,10 +40,33 @@ export function createWebSocketHandler(wss: WebSocketServer) {
         const stateMap: ScreenStateMap = {};
 
         for (const state of states) {
+            let slideshow: { images: string[]; intervalMs: number } | undefined;
+
+            // If there's a scenario, check for slideshow config
+            if (state.scenario) {
+                const assignment = await prisma.scenarioAssignment.findUnique({
+                    where: {
+                        screenId_scenario: {
+                            screenId: state.screenId,
+                            scenario: state.scenario,
+                        },
+                    },
+                    include: { images: { orderBy: { order: "asc" } } },
+                });
+
+                if (assignment && assignment.intervalMs && assignment.images.length > 0) {
+                    slideshow = {
+                        images: assignment.images.map((img: { imagePath: string }) => img.imagePath),
+                        intervalMs: assignment.intervalMs,
+                    };
+                }
+            }
+
             stateMap[state.screenId] = {
                 src: state.imageSrc,
                 scenario: state.scenario,
                 updated: state.updatedAt,
+                slideshow,
             };
         }
 
