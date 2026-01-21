@@ -19,6 +19,12 @@
     background-clip: text;
 }
 
+.headerActions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
 .mapLayout {
     display: flex;
     height: calc(100vh - 80px);
@@ -107,6 +113,13 @@
     background-color: rgba(239, 68, 68, 0.1);
     color: #f87171;
     border-color: rgba(239, 68, 68, 0.2);
+}
+
+.emptyMessage {
+    color: var(--text-secondary);
+    font-style: italic;
+    padding: 1rem;
+    text-align: center;
 }
 
 /* Map Popups - global styles needed for Leaflet */

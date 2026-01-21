@@ -492,10 +492,35 @@ export const contentRouter = router({
         .input(z.object({ category: z.string().optional() }).optional())
         .query(async ({ input }) => {
             const where = input?.category ? { category: input.category } : {};
-            return prisma.content.findMany({
+            const contents = await prisma.content.findMany({
                 where,
                 orderBy: { createdAt: "desc" },
             });
+
+            // Verify files exist and filter out orphaned records
+            const fs = await import("fs/promises");
+            const path = await import("path");
+            const validContents: typeof contents = [];
+            const orphanedIds: string[] = [];
+
+            for (const content of contents) {
+                // Path in DB is like "/content/..." - resolve to root content folder
+                const filePath = path.join(process.cwd(), "..", content.path);
+                try {
+                    await fs.access(filePath);
+                    validContents.push(content);
+                } catch {
+                    // File doesn't exist, mark for cleanup
+                    orphanedIds.push(content.id);
+                }
+            }
+
+            // Clean up orphaned records in background (don't await)
+            if (orphanedIds.length > 0) {
+                prisma.content.deleteMany({ where: { id: { in: orphanedIds } } }).catch(() => { });
+            }
+
+            return validContents;
         }),
 
     getByCategory: publicProcedure
@@ -535,6 +560,7 @@ export const contentRouter = router({
             // Delete file from disk
             const fs = await import("fs/promises");
             const path = await import("path");
+            // Path in DB is like "/content/..." - resolve to root content folder
             const filePath = path.join(process.cwd(), "..", content.path);
             try {
                 await fs.unlink(filePath);
@@ -578,7 +604,7 @@ export const contentRouter = router({
             const fs = await import("fs/promises");
             const path = await import("path");
 
-            // Get the actual filename from the path (not content.filename which is display name)
+            // Path in DB is like "/content/..." - resolve to root content folder
             const oldFilePath = path.join(process.cwd(), "..", content.path);
             const dir = path.dirname(oldFilePath);
             const oldDiskFilename = path.basename(content.path);
@@ -623,6 +649,101 @@ export const contentRouter = router({
                 data: { filename: newFilename, path: newPath },
             });
         }),
+
+    // Cleanup orphaned content records (files that no longer exist)
+    cleanup: protectedProcedure.mutation(async () => {
+        const contents = await prisma.content.findMany();
+        const fs = await import("fs/promises");
+        const path = await import("path");
+
+        let deleted = 0;
+        for (const content of contents) {
+            // Path in DB is like "/content/..." - resolve to root content folder
+            const filePath = path.join(process.cwd(), "..", content.path);
+            try {
+                await fs.access(filePath);
+            } catch {
+                await prisma.content.delete({ where: { id: content.id } });
+                deleted++;
+            }
+        }
+
+        return { deleted };
+    }),
+
+    // Scan content folder for new files not in database
+    scan: protectedProcedure.mutation(async () => {
+        const fs = await import("fs/promises");
+        const path = await import("path");
+        const contentDir = path.join(process.cwd(), "..", "content");
+
+        // MIME type mapping
+        const mimeTypes: Record<string, string> = {
+            ".png": "image/png",
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".gif": "image/gif",
+            ".webp": "image/webp",
+            ".svg": "image/svg+xml",
+            ".mp4": "video/mp4",
+            ".webm": "video/webm",
+            ".mov": "video/quicktime",
+        };
+
+        let added = 0;
+
+        try {
+            // Scan all category folders
+            const entries = await fs.readdir(contentDir, { withFileTypes: true });
+            const categories = entries.filter(d => d.isDirectory());
+
+            for (const cat of categories) {
+                const catPath = path.join(contentDir, cat.name);
+                const files = await fs.readdir(catPath);
+
+                for (const filename of files) {
+                    // Skip hidden files
+                    if (filename.startsWith(".")) continue;
+
+                    const relativePath = `/content/${cat.name}/${filename}`;
+
+                    // Check if already in database
+                    const exists = await prisma.content.findFirst({ where: { path: relativePath } });
+                    if (exists) continue;
+
+                    // Get file info
+                    const filePath = path.join(catPath, filename);
+                    const stat = await fs.stat(filePath);
+
+                    // Skip directories
+                    if (stat.isDirectory()) continue;
+
+                    const ext = path.extname(filename).toLowerCase();
+                    const mimeType = mimeTypes[ext];
+
+                    // Skip unknown file types
+                    if (!mimeType) continue;
+
+                    // Add to database
+                    await prisma.content.create({
+                        data: {
+                            filename,
+                            path: relativePath,
+                            category: cat.name,
+                            mimeType,
+                            size: stat.size,
+                        },
+                    });
+                    added++;
+                }
+            }
+        } catch (error) {
+            // Content directory might not exist yet
+            console.error("Error scanning content folder:", error);
+        }
+
+        return { added };
+    }),
 });
 
 // Scenarios router - manage scenario-content assignments
@@ -634,6 +755,7 @@ export const scenariosRouter = router({
             return prisma.scenarioAssignment.findMany({
                 where,
                 orderBy: [{ screenId: "asc" }, { scenario: "asc" }],
+                include: { images: { orderBy: { order: "asc" } } },
             });
         }),
 
@@ -688,18 +810,241 @@ export const scenariosRouter = router({
 
     // Get all assignments grouped by screen for Control page
     getAll: publicProcedure.query(async () => {
-        const assignments = await prisma.scenarioAssignment.findMany();
-        const grouped: Record<string, Record<string, string>> = {};
+        const assignments = await prisma.scenarioAssignment.findMany({
+            include: { images: { orderBy: { order: "asc" } } },
+        });
+        const grouped: Record<string, Record<string, { imagePath: string; intervalMs: number | null; images: string[] }>> = {};
 
         for (const a of assignments) {
             if (!grouped[a.screenId]) {
                 grouped[a.screenId] = {};
             }
-            grouped[a.screenId][a.scenario] = a.imagePath;
+            grouped[a.screenId][a.scenario] = {
+                imagePath: a.imagePath,
+                intervalMs: a.intervalMs,
+                images: a.images.map((img: { imagePath: string }) => img.imagePath),
+            };
         }
 
         return grouped;
     }),
+
+    // Get slideshow configuration for a specific assignment
+    getSlideshow: publicProcedure
+        .input(z.object({ screenId: z.string(), scenario: z.string() }))
+        .query(async ({ input }) => {
+            const assignment = await prisma.scenarioAssignment.findUnique({
+                where: {
+                    screenId_scenario: {
+                        screenId: input.screenId,
+                        scenario: input.scenario,
+                    },
+                },
+                include: { images: { orderBy: { order: "asc" } } },
+            });
+
+            if (!assignment) return null;
+
+            return {
+                imagePath: assignment.imagePath,
+                intervalMs: assignment.intervalMs,
+                images: assignment.images.map((img: { id: string; imagePath: string; order: number }) => ({
+                    id: img.id,
+                    imagePath: img.imagePath,
+                    order: img.order,
+                })),
+            };
+        }),
+
+    // Set slideshow configuration (images + interval)
+    setSlideshow: protectedProcedure
+        .input(z.object({
+            screenId: z.string(),
+            scenario: z.string(),
+            images: z.array(z.string()).min(1),
+            intervalMs: z.number().min(1000).max(60000).nullable(),
+        }))
+        .mutation(async ({ input }) => {
+            const { screenId, scenario, images, intervalMs } = input;
+
+            // Use first image as main imagePath for backward compatibility
+            const imagePath = images[0];
+
+            // Upsert the assignment
+            const assignment = await prisma.scenarioAssignment.upsert({
+                where: {
+                    screenId_scenario: { screenId, scenario },
+                },
+                update: {
+                    imagePath,
+                    intervalMs: images.length > 1 ? intervalMs : null, // Only set interval if multiple images
+                },
+                create: {
+                    screenId,
+                    scenario,
+                    imagePath,
+                    intervalMs: images.length > 1 ? intervalMs : null,
+                },
+            });
+
+            // Delete existing slideshow images
+            await prisma.slideshowImage.deleteMany({
+                where: { assignmentId: assignment.id },
+            });
+
+            // Create new slideshow images (only if more than 1 image)
+            if (images.length > 1) {
+                await prisma.slideshowImage.createMany({
+                    data: images.map((img, index) => ({
+                        assignmentId: assignment.id,
+                        imagePath: img,
+                        order: index,
+                    })),
+                });
+            }
+
+            return {
+                ...assignment,
+                images: images.map((img, index) => ({ imagePath: img, order: index })),
+            };
+        }),
+
+    // Add a single image to slideshow
+    addSlideshowImage: protectedProcedure
+        .input(z.object({
+            screenId: z.string(),
+            scenario: z.string(),
+            imagePath: z.string(),
+        }))
+        .mutation(async ({ input }) => {
+            const assignment = await prisma.scenarioAssignment.findUnique({
+                where: {
+                    screenId_scenario: {
+                        screenId: input.screenId,
+                        scenario: input.scenario,
+                    },
+                },
+                include: { images: { orderBy: { order: "desc" }, take: 1 } },
+            });
+
+            if (!assignment) {
+                throw new Error("Assignment not found");
+            }
+
+            const maxOrder = assignment.images[0]?.order ?? -1;
+
+            const newImage = await prisma.slideshowImage.create({
+                data: {
+                    assignmentId: assignment.id,
+                    imagePath: input.imagePath,
+                    order: maxOrder + 1,
+                },
+            });
+
+            // Set default interval if not set and this is the second image
+            if (!assignment.intervalMs) {
+                await prisma.scenarioAssignment.update({
+                    where: { id: assignment.id },
+                    data: { intervalMs: 5000 }, // Default 5 seconds
+                });
+            }
+
+            return newImage;
+        }),
+
+    // Remove an image from slideshow
+    removeSlideshowImage: protectedProcedure
+        .input(z.object({ imageId: z.string() }))
+        .mutation(async ({ input }) => {
+            const image = await prisma.slideshowImage.findUnique({
+                where: { id: input.imageId },
+                include: { assignment: { include: { images: true } } },
+            });
+
+            if (!image) {
+                throw new Error("Image not found");
+            }
+
+            await prisma.slideshowImage.delete({
+                where: { id: input.imageId },
+            });
+
+            // If this was the last slideshow image, clear interval
+            if (image.assignment.images.length <= 1) {
+                await prisma.scenarioAssignment.update({
+                    where: { id: image.assignmentId },
+                    data: { intervalMs: null },
+                });
+            }
+
+            return { success: true };
+        }),
+
+    // Update slideshow image order
+    updateSlideshowOrder: protectedProcedure
+        .input(z.object({
+            screenId: z.string(),
+            scenario: z.string(),
+            imageIds: z.array(z.string()),
+        }))
+        .mutation(async ({ input }) => {
+            const assignment = await prisma.scenarioAssignment.findUnique({
+                where: {
+                    screenId_scenario: {
+                        screenId: input.screenId,
+                        scenario: input.scenario,
+                    },
+                },
+            });
+
+            if (!assignment) {
+                throw new Error("Assignment not found");
+            }
+
+            // Update order for each image
+            await Promise.all(
+                input.imageIds.map((id, index) =>
+                    prisma.slideshowImage.update({
+                        where: { id },
+                        data: { order: index },
+                    })
+                )
+            );
+
+            // Update main imagePath to first image
+            const firstImage = await prisma.slideshowImage.findFirst({
+                where: { assignmentId: assignment.id },
+                orderBy: { order: "asc" },
+            });
+
+            if (firstImage) {
+                await prisma.scenarioAssignment.update({
+                    where: { id: assignment.id },
+                    data: { imagePath: firstImage.imagePath },
+                });
+            }
+
+            return { success: true };
+        }),
+
+    // Update slideshow interval
+    setInterval: protectedProcedure
+        .input(z.object({
+            screenId: z.string(),
+            scenario: z.string(),
+            intervalMs: z.number().min(1000).max(60000).nullable(),
+        }))
+        .mutation(async ({ input }) => {
+            return prisma.scenarioAssignment.update({
+                where: {
+                    screenId_scenario: {
+                        screenId: input.screenId,
+                        scenario: input.scenario,
+                    },
+                },
+                data: { intervalMs: input.intervalMs },
+            });
+        }),
 });
 
 // Scenario names router - manage persistent scenario/scene names

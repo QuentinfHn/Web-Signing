@@ -1,6 +1,9 @@
 import { useState, FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import styles from "./LoginModal.module.css";
+import buttonStyles from "./Button.module.css";
+import formStyles from "./Form.module.css";
 
 export default function LoginModal() {
     const { login } = useAuth();
@@ -23,15 +26,15 @@ export default function LoginModal() {
     };
 
     return (
-        <div className="login-overlay">
-            <div className="login-modal">
-                <div className="login-header">
+        <div className={styles.loginOverlay}>
+            <div className={styles.loginModal}>
+                <div className={styles.loginHeader}>
                     <h2>Inloggen</h2>
                     <p>Voer het wachtwoord in om toegang te krijgen tot de admin pagina's.</p>
                 </div>
 
-                <form onSubmit={handleSubmit} className="login-form">
-                    <div className="form-group">
+                <form onSubmit={handleSubmit} className={styles.loginForm}>
+                    <div className={`${styles.formGroup} ${formStyles.formGroup}`}>
                         <label htmlFor="password">Wachtwoord</label>
                         <input
                             type="password"
@@ -41,12 +44,12 @@ export default function LoginModal() {
                             placeholder="Voer wachtwoord in"
                             autoFocus
                             disabled={isLoading}
-                            className="login-input"
+                            className={formStyles.loginInput}
                         />
                     </div>
 
                     {error && (
-                        <div className="login-error">
+                        <div className={styles.loginError}>
                             {error}
                         </div>
                     )}
@@ -54,14 +57,14 @@ export default function LoginModal() {
                     <button
                         type="submit"
                         disabled={isLoading || !password}
-                        className="btn-primary login-btn"
+                        className={`${buttonStyles.btnPrimary} ${buttonStyles.btnLogin}`}
                     >
                         {isLoading ? "Bezig..." : "Inloggen"}
                     </button>
                 </form>
 
-                <div className="login-footer">
-                    <Link to="/" className="back-link">Terug naar home</Link>
+                <div className={styles.loginFooter}>
+                    <Link to="/" className={`${buttonStyles.backLink} ${styles.loginFooterBackLink}`}>Terug naar home</Link>
                 </div>
             </div>
         </div>

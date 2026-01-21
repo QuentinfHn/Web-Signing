@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { Content, trpcClient } from "../utils/trpc";
+import styles from "./AdvancedContentSelector.module.css";
 
 interface AdvancedContentSelectorProps {
     value: string;
@@ -140,39 +141,39 @@ export default function AdvancedContentSelector({
     };
 
     return (
-        <div className="advanced-content-selector" ref={dropdownRef}>
+        <div className={styles.advancedContentSelector} ref={dropdownRef}>
             {/* Trigger button */}
             <button
                 type="button"
-                className="content-selector-trigger"
+                className={styles.contentSelectorTrigger}
                 onClick={() => setIsOpen(!isOpen)}
             >
-                <span className="selected-content">
+                <span className={styles.selectedContent}>
                     {selectedContent ? (
                         <>
-                            <span className="file-icon">{getFileTypeIcon(selectedContent.mimeType)}</span>
-                            <span className="file-name">{selectedContent.filename}</span>
+                            <span className={styles.fileIcon}>{getFileTypeIcon(selectedContent.mimeType)}</span>
+                            <span className={styles.fileName}>{selectedContent.filename}</span>
                         </>
                     ) : (
-                        <span className="placeholder">-- Geen content --</span>
+                        <span className={styles.placeholder}>-- Geen content --</span>
                     )}
                 </span>
-                <span className="dropdown-arrow">{isOpen ? "▲" : "▼"}</span>
+                <span className={styles.dropdownArrow}>{isOpen ? "▲" : "▼"}</span>
             </button>
 
             {/* Dropdown panel */}
             {isOpen && (
-                <div className="content-selector-dropdown">
+                <div className={styles.contentSelectorDropdown}>
                     {/* Filter tabs */}
-                    <div className="filter-tabs">
+                    <div className={styles.filterTabs}>
                         <button
-                            className={`filter-tab ${activeFilter === "all" ? "active" : ""}`}
+                            className={`${styles.filterTab} ${activeFilter === "all" ? styles.active : ""}`}
                             onClick={() => setActiveFilter("all")}
                         >
                             Alle
                         </button>
                         <button
-                            className={`filter-tab ${activeFilter === "favorites" ? "active" : ""}`}
+                            className={`${styles.filterTab} ${activeFilter === "favorites" ? styles.active : ""}`}
                             onClick={() => setActiveFilter("favorites")}
                         >
                             ★ Favorieten
@@ -180,7 +181,7 @@ export default function AdvancedContentSelector({
                         {categories.slice(0, 3).map((cat) => (
                             <button
                                 key={cat}
-                                className={`filter-tab ${activeFilter === cat ? "active" : ""}`}
+                                className={`${styles.filterTab} ${activeFilter === cat ? styles.active : ""}`}
                                 onClick={() => setActiveFilter(cat)}
                             >
                                 {cat}
@@ -189,10 +190,10 @@ export default function AdvancedContentSelector({
                     </div>
 
                     {/* Search input */}
-                    <div className="search-container">
+                    <div className={styles.searchContainer}>
                         <input
                             type="text"
-                            className="content-search-input"
+                            className={styles.contentSearchInput}
                             placeholder="Zoek content..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -200,7 +201,7 @@ export default function AdvancedContentSelector({
                         />
                         {searchQuery && (
                             <button
-                                className="clear-search"
+                                className={styles.clearSearch}
                                 onClick={() => setSearchQuery("")}
                             >
                                 ×
@@ -209,41 +210,41 @@ export default function AdvancedContentSelector({
                     </div>
 
                     {/* Content list */}
-                    <div className="content-list">
+                    <div className={styles.contentList}>
                         {/* No content option */}
-                        <div className="content-group">
-                            <div className="group-header">OPTIES</div>
+                        <div className={styles.contentGroup}>
+                            <div className={styles.groupHeader}>OPTIES</div>
                             <div
-                                className={`content-item ${!value ? "selected" : ""}`}
+                                className={`${styles.contentItem} ${!value ? styles.selected : ""}`}
                                 onClick={handleClear}
                             >
-                                <div className="content-item-info">
-                                    <span className="content-name">Geen content</span>
-                                    <span className="content-details">Leeg scherm</span>
+                                <div className={styles.contentItemInfo}>
+                                    <span className={styles.contentName}>Geen content</span>
+                                    <span className={styles.contentDetails}>Maak scherm leeg</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Grouped content */}
                         {Object.entries(groupedContent).map(([groupName, items]) => (
-                            <div key={groupName} className="content-group">
-                                <div className="group-header">{groupName}</div>
+                            <div key={groupName} className={styles.contentGroup}>
+                                <div className={styles.groupHeader}>{groupName}</div>
                                 {items.map((content) => (
                                     <div
                                         key={content.id}
-                                        className={`content-item ${content.path === value ? "selected" : ""}`}
+                                        className={`${styles.contentItem} ${content.path === value ? styles.selected : ""}`}
                                         onClick={() => handleSelect(content)}
                                     >
-                                        <div className="content-item-info">
-                                            <span className="content-name">
+                                        <div className={styles.contentItemInfo}>
+                                            <span className={styles.contentName}>
                                                 {getFileTypeIcon(content.mimeType)} {content.filename}
                                             </span>
-                                            <span className="content-details">
+                                            <span className={styles.contentDetails}>
                                                 {formatFileSize(content.size)} • {content.category}
                                             </span>
                                         </div>
                                         <button
-                                            className={`favorite-btn ${content.isFavorite ? "is-favorite" : ""}`}
+                                            className={`${styles.favoriteBtn} ${content.isFavorite ? styles.isFavorite : ""}`}
                                             onClick={(e) => handleToggleFavorite(e, content)}
                                             title={content.isFavorite ? "Verwijder uit favorieten" : "Voeg toe aan favorieten"}
                                         >
@@ -256,7 +257,7 @@ export default function AdvancedContentSelector({
 
                         {/* Empty state */}
                         {Object.keys(groupedContent).length === 0 && (
-                            <div className="empty-state">
+                            <div className={styles.emptyState}>
                                 Geen content gevonden
                             </div>
                         )}
