@@ -3,7 +3,7 @@ import { z } from "zod";
 import { prisma } from "../prisma/client.js";
 import { verifyPassword, generateToken, isAuthEnabled } from "../auth/auth.js";
 import type { Context } from "./context.js";
-import { invalidateDisplaysCache, invalidateScreensCache, invalidateStateCache, invalidateScenarioCache, invalidateAllCache } from "../services/cache.js";
+import { invalidateDisplaysCache, invalidateScreensCache, invalidateStateCache, invalidateScenarioCache } from "../services/cache.js";
 
 const t = initTRPC.context<Context>().create();
 

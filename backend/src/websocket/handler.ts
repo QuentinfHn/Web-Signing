@@ -1,6 +1,7 @@
 import { WebSocketServer, WebSocket } from "ws";
 import { prisma } from "../prisma/client.js";
 import { setWebSocketServer, broadcastState, type ScreenStateMap } from "../services/screenState.js";
+import { invalidateStateCache } from "../services/cache.js";
 
 const PING_INTERVAL = 30000; // 30 seconds
 
@@ -87,6 +88,9 @@ export function createWebSocketHandler(wss: WebSocketServer) {
                         update: { imageSrc: data.src, scenario: data.scenario || null },
                         create: { screenId: data.screen, imageSrc: data.src, scenario: data.scenario || null },
                     });
+
+                    // Invalidate the cache so broadcastState gets fresh data
+                    invalidateStateCache();
 
                     await broadcastState();
                 }

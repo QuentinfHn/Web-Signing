@@ -1,5 +1,4 @@
 import { WebSocketServer, WebSocket } from "ws";
-import { prisma } from "../prisma/client.js";
 import { getAllCachedScreenStates, getCachedScenario } from "./cache.js";
 
 export interface SlideshowConfig {
