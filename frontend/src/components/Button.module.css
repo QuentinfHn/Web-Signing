@@ -1,0 +1,283 @@
+/* Button Styles */
+
+.backLink {
+    color: var(--text-secondary);
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.backLink:hover {
+    background: var(--bg-card);
+    color: var(--text-primary);
+}
+
+/* Base button styles */
+.btn {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+/* Primary button */
+.btnPrimary {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+    background: var(--accent);
+    color: white;
+}
+
+.btnPrimary:hover {
+    background: var(--accent-hover);
+}
+
+/* Secondary button */
+.btnSecondary {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+    background: transparent;
+    color: var(--text-secondary);
+    border-color: var(--border);
+}
+
+.btnSecondary:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+}
+
+/* Small button */
+.btnSmall {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+/* Icon button */
+.btnIcon {
+    padding: 0.2rem 0.4rem;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.15s ease;
+}
+
+.btnIcon:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--border);
+}
+
+.btnIcon.btnDelete:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+}
+
+.btnIcon.btnSave {
+    color: var(--success);
+}
+
+.btnIcon.btnSave:hover {
+    background: rgba(16, 185, 129, 0.2);
+}
+
+.btnIcon.btnEdit {
+    color: var(--accent);
+}
+
+.btnIcon.btnEdit:hover {
+    background: rgba(59, 130, 246, 0.2);
+}
+
+/* Danger button */
+.btnDanger {
+    padding: 0.6rem 1rem;
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    border-radius: 8px;
+    color: #f87171;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+.btnDanger:hover {
+    background: rgba(239, 68, 68, 0.3);
+    border-color: rgba(239, 68, 68, 0.6);
+}
+
+/* Cancel button */
+.btnCancel {
+    background: rgba(239, 68, 68, 0.5) !important;
+}
+
+.btnCancel:hover {
+    background: rgba(239, 68, 68, 0.7) !important;
+}
+
+/* Logout button */
+.btnLogout {
+    padding: 0.5rem 1.5rem;
+}
+
+/* Geocode button */
+.btnGeocode {
+    padding: 0.6rem 1rem;
+    background: linear-gradient(135deg, var(--accent) 0%, #6366f1 100%);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.btnGeocode:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+}
+
+.btnGeocode:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Small geocode button */
+.btnGeocodeSmall {
+    padding: 0.5rem 0.75rem;
+    background: var(--accent);
+    border: none;
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+.btnGeocodeSmall:hover:not(:disabled) {
+    background: var(--accent-hover);
+}
+
+.btnGeocodeSmall:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Create button */
+.btnCreate {
+    padding: 0.6rem 1.5rem;
+    background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+    font-weight: 600;
+}
+
+.btnCreate:hover {
+    background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+}
+
+/* Save edit button */
+.btnSaveEdit {
+    padding: 0.6rem 1.5rem;
+    background: linear-gradient(135deg, var(--accent) 0%, #6366f1 100%);
+    font-weight: 600;
+}
+
+.btnSaveEdit:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+}
+
+/* Clear button */
+.btnClear {
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.4);
+}
+
+.btnClear:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.6);
+}
+
+/* Login button */
+.btnLogin {
+    width: 100%;
+    padding: 0.85rem 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-top: 0.5rem;
+}
+
+.btnLogin:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Upload button */
+.btnUpload {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    background: var(--accent);
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btnUpload:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+}
+
+/* Settings button */
+.settingsBtn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.4rem;
+    border-radius: 4px;
+    font-size: 1.1rem;
+    opacity: 0.5;
+    transition: all 0.2s ease;
+    margin-left: auto;
+}
+
+.settingsBtn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: rotate(45deg);
+}
+
+/* Toggle button */
+.toggleBtn {
+    padding: 0.4rem 0.8rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+.toggleBtn:hover,
+.toggleBtn.active {
+    background: var(--bg-card-hover);
+    border-color: var(--accent);
+    color: var(--text-primary);
+}

@@ -1,0 +1,149 @@
+/* Form Styles */
+
+/* Input styles */
+.inputSmall {
+    padding: 0.35rem 0.5rem;
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-size: 0.8rem;
+}
+
+.inputSmall:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.inputUppercase {
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.selectSmall {
+    padding: 0.4rem 0.6rem;
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-size: 0.8rem;
+}
+
+/* Modal styles */
+.modalInput,
+.modalSelect {
+    width: 100%;
+    padding: 0.75rem;
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.modalInput:focus,
+.modalSelect:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+/* Login input */
+.loginInput {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 1rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.loginInput:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.loginInput:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Interval input */
+.intervalInput {
+    width: 70px;
+    padding: 0.5rem 0.75rem;
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.intervalInput:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+/* Rename input */
+.renameInput {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: 8px;
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.renameInput:focus {
+    border-color: rgba(99, 102, 241, 0.6);
+}
+
+/* Form group */
+.formGroup {
+    margin-bottom: 1rem;
+    overflow: visible;
+}
+
+.formGroup label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* Category selector */
+.categorySelector {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.categorySelector label {
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.categorySelector select,
+.categorySelector input {
+    padding: 0.75rem 1rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 1rem;
+    min-width: 180px;
+}
+
+.categorySelector select:focus,
+.categorySelector input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
