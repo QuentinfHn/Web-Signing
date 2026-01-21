@@ -1,4 +1,5 @@
 import { Screen } from "../../utils/trpc";
+import styles from "../../pages/ScreenEditor.module.css";
 
 interface ScreenCanvasProps {
     screens: Screen[];
@@ -13,19 +14,19 @@ export function ScreenCanvas({ screens, editingId, onScreenClick }: ScreenCanvas
     const scale = VISUALIZER_WIDTH / CANVAS_WIDTH;
 
     return (
-        <div className="visualizer-container">
+        <div className={styles.visualizerContainer}>
             <div
-                className="visualizer-canvas"
+                className={styles.visualizerCanvas}
                 style={{
                     width: CANVAS_WIDTH * scale,
                     height: CANVAS_HEIGHT * scale,
                 }}
             >
-                <span className="canvas-label">1920x1080</span>
+                <span className={styles.canvasLabel}>1920x1080</span>
                 {screens.map(screen => (
                     <div
                         key={screen.id}
-                        className={`visualizer-screen ${editingId === screen.id ? "editing" : ""}`}
+                        className={`${styles.visualizerScreen} ${editingId === screen.id ? styles.editing : ""}`}
                         style={{
                             left: screen.x * scale,
                             top: screen.y * scale,
@@ -35,7 +36,7 @@ export function ScreenCanvas({ screens, editingId, onScreenClick }: ScreenCanvas
                         onClick={() => onScreenClick(screen)}
                         title={`${screen.name || screen.id}\n${screen.x},${screen.y} - ${screen.width}x${screen.height}`}
                     >
-                        <span className="screen-label">{screen.name || screen.id}</span>
+                        <span className={styles.screenLabel}>{screen.name || screen.id}</span>
                     </div>
                 ))}
             </div>
