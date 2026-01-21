@@ -8,6 +8,8 @@ import MapOverview from "./pages/MapOverview";
 import { trpcClient, Display as DisplayType } from "./utils/trpc";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import styles from "./pages/Home.module.css";
+import buttonStyles from "./components/Button.module.css";
 
 function Home() {
     const [displays, setDisplays] = useState<DisplayType[]>([]);
@@ -27,31 +29,31 @@ function Home() {
     }, []);
 
     return (
-        <div className="home">
+        <div className={styles.home}>
             <p>Kies een pagina om te openen:</p>
-            <nav className="nav-links">
-                <Link to="/control" className="nav-link">
+            <nav className={styles.navLinks}>
+                <Link to="/control" className={styles.navLink}>
                     Control Panel
                 </Link>
-                <Link to="/content" className="nav-link">
+                <Link to="/content" className={styles.navLink}>
                     Content Manager
                 </Link>
-                <Link to="/screens" className="nav-link">
+                <Link to="/screens" className={styles.navLink}>
                     Screen Editor
                 </Link>
-                <Link to="/map" className="nav-link">
+                <Link to="/map" className={styles.navLink}>
                     Map Overview
                 </Link>
             </nav>
             {displays.length > 0 && (
                 <>
-                    <p className="section-label">Displays:</p>
-                    <nav className="nav-links">
+                    <p className={styles.sectionLabel}>Displays:</p>
+                    <nav className={styles.navLinks}>
                         {displays.map(display => (
                             <Link
                                 key={display.id}
                                 to={`/display/${display.id}`}
-                                className="nav-link display-link"
+                                className={`${styles.navLink} ${styles.navLinkDisplayLink}`}
                             >
                                 {display.name || display.id}
                             </Link>
@@ -60,8 +62,8 @@ function Home() {
                 </>
             )}
             {authRequired && isAuthenticated && (
-                <div className="auth-status">
-                    <button onClick={logout} className="btn-secondary logout-btn">
+                <div className={styles.authStatus}>
+                    <button onClick={logout} className={`${buttonStyles.btnSecondary} ${buttonStyles.btnLogout}`}>
                         Uitloggen
                     </button>
                 </div>
