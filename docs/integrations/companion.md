@@ -104,7 +104,74 @@ Returns a list of all available scenarios.
 
 ---
 
-### 4. Get Presets
+### 4. Get Assignments
+
+Returns all scenario assignments with content type information (still image or slideshow).
+
+**Endpoint:** `GET /assignments`
+
+**Authentication:** Required (if `ADMIN_PASSWORD` is set)
+
+**Response:**
+```json
+[
+  {
+    "screenId": "scr_123abc_xyz",
+    "scenario": "Scene 1",
+    "contentType": "still_image",
+    "imagePath": "/content/shared/logo.png",
+    "intervalMs": null,
+    "images": []
+  },
+  {
+    "screenId": "scr_456def_abc",
+    "scenario": "Scene 2",
+    "contentType": "slideshow",
+    "imagePath": "/content/promo/slide1.png",
+    "intervalMs": 5000,
+    "images": [
+      "/content/promo/slide1.png",
+      "/content/promo/slide2.png",
+      "/content/promo/slide3.png"
+    ]
+  }
+]
+```
+
+**Content Type values:**
+- `still_image` - Single image (no interval or only 1 image)
+- `slideshow` - Multiple images with interval
+
+---
+
+### 5. Get Assignments for Screen
+
+Returns scenario assignments for a specific screen.
+
+**Endpoint:** `GET /assignments/:screenId`
+
+**Authentication:** Required (if `ADMIN_PASSWORD` is set)
+
+**Response:**
+```json
+[
+  {
+    "screenId": "scr_123abc_xyz",
+    "scenario": "Scene 1",
+    "contentType": "still_image",
+    "imagePath": "/content/shared/logo.png",
+    "intervalMs": null,
+    "images": []
+  }
+]
+```
+
+**Errors:**
+- `404` - Screen not found
+
+---
+
+### 6. Get Presets
 
 Returns a list of all available presets.
 
@@ -128,7 +195,7 @@ Returns a list of all available presets.
 
 ---
 
-### 5. Set Screen Content
+### 7. Set Screen Content
 
 Sets the content for a specific screen.
 
@@ -160,7 +227,7 @@ curl -X POST http://localhost:8080/api/companion/screens/scr_123abc_xyz/content 
 
 ---
 
-### 6. Trigger Scenario
+### 8. Trigger Scenario
 
 Triggers a scenario for a specific screen.
 
@@ -193,7 +260,7 @@ curl -X POST http://localhost:8080/api/companion/scenarios/trigger \
 
 ---
 
-### 7. Trigger Preset
+### 9. Trigger Preset
 
 Activates a preset (updates all screens defined in the preset).
 
