@@ -23,7 +23,8 @@ describe('ContentManager page', () => {
       mimeType: 'image/png',
       category: 'Algemeen',
       size: 1024,
-      createdAt: new Date(),
+      createdAt: new Date().toISOString(),
+      isFavorite: false,
     },
     {
       id: 'content-2',
@@ -32,7 +33,8 @@ describe('ContentManager page', () => {
       mimeType: 'video/mp4',
       category: 'Algemeen',
       size: 2048,
-      createdAt: new Date(),
+      createdAt: new Date().toISOString(),
+      isFavorite: false,
     },
   ]
 
@@ -113,7 +115,7 @@ describe('ContentManager page', () => {
       vi.mocked(global.fetch).mockResolvedValue({
         ok: true,
         json: async () => ({}),
-      })
+      } as Response)
 
       renderContentManager()
       const fileInput = screen.getByLabelText('Kies bestand')
@@ -141,7 +143,7 @@ describe('ContentManager page', () => {
       vi.mocked(global.fetch).mockResolvedValue({
         ok: true,
         json: async () => ({}),
-      })
+      } as Response)
 
       renderContentManager()
       const uploadZone = screen.getByText('📤 Sleep bestanden hierheen of').closest('.upload-zone')
@@ -300,7 +302,7 @@ describe('ContentManager page', () => {
       vi.mocked(global.fetch).mockResolvedValue({
         ok: true,
         json: async () => ({}),
-      })
+      } as Response)
 
       renderContentManager()
       const fileInput = screen.getByLabelText('Kies bestand')
@@ -322,7 +324,7 @@ describe('ContentManager page', () => {
       vi.mocked(global.fetch).mockResolvedValue({
         ok: false,
         json: async () => ({}),
-      })
+      } as Response)
       const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => { })
 
       renderContentManager()
