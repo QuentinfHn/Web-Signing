@@ -7,8 +7,6 @@ const STORES = {
     states: 'states'
 } as const;
 
-type StoreName = typeof STORES[keyof typeof STORES];
-
 interface CacheMetadata {
     id: 'meta';
     version: number;
@@ -112,37 +110,6 @@ class SignageCacheDB {
         return this.db;
     }
 
-    private async transaction<T>(
-        storeNames: StoreName[],
-        mode: IDBTransactionMode,
-        callback: (transaction: IDBTransaction) => T
-    ): Promise<T> {
-        const db = await this.getDB();
-        const transaction = db.transaction(storeNames, mode);
-
-        return new Promise((resolve, reject) => {
-            try {
-                const result = callback(transaction);
-
-                transaction.oncomplete = () => resolve(result);
-                transaction.onerror = () => {
-                    const error = transaction.error;
-                    if (error) {
-                        reject(new Error(`Transaction error: ${error.message}`));
-                    } else {
-                        reject(new Error('Unknown transaction error'));
-                    }
-                };
-                transaction.onabort = () => {
-                    const error = transaction.error;
-                    reject(new Error(`Transaction aborted: ${error?.message || 'Unknown reason'}`));
-                };
-            } catch (error) {
-                reject(error);
-            }
-        });
-    }
-
     async getMetadata(): Promise<CacheMetadata | null> {
         try {
             const db = await this.getDB();
@@ -218,18 +185,12 @@ class SignageCacheDB {
                 const transaction = db.transaction([STORES.displays], 'readwrite');
                 const store = transaction.objectStore(STORES.displays);
 
-                let completed = 0;
-                const total = displays.length;
+                transaction.oncomplete = () => resolve();
+                transaction.onerror = () => reject(new Error(`Transaction error: ${transaction.error?.message || 'Unknown error'}`));
+                transaction.onabort = () => reject(new Error(`Transaction aborted: ${transaction.error?.message || 'Unknown reason'}`));
 
                 displays.forEach((display) => {
-                    const request = store.put(display);
-                    request.onsuccess = () => {
-                        completed++;
-                        if (completed === total) {
-                            resolve();
-                        }
-                    };
-                    request.onerror = () => reject(new Error(`Failed to put display: ${request.error?.message || 'Unknown error'}`));
+                    store.put(display);
                 });
             });
         } catch (error) {
@@ -263,18 +224,12 @@ class SignageCacheDB {
                 const transaction = db.transaction([STORES.screens], 'readwrite');
                 const store = transaction.objectStore(STORES.screens);
 
-                let completed = 0;
-                const total = screens.length;
+                transaction.oncomplete = () => resolve();
+                transaction.onerror = () => reject(new Error(`Transaction error: ${transaction.error?.message || 'Unknown error'}`));
+                transaction.onabort = () => reject(new Error(`Transaction aborted: ${transaction.error?.message || 'Unknown reason'}`));
 
                 screens.forEach((screen) => {
-                    const request = store.put(screen);
-                    request.onsuccess = () => {
-                        completed++;
-                        if (completed === total) {
-                            resolve();
-                        }
-                    };
-                    request.onerror = () => reject(new Error(`Failed to put screen: ${request.error?.message || 'Unknown error'}`));
+                    store.put(screen);
                 });
             });
         } catch (error) {
@@ -331,19 +286,12 @@ class SignageCacheDB {
                 const transaction = db.transaction([STORES.states], 'readwrite');
                 const store = transaction.objectStore(STORES.states);
 
-                const stateArray = Object.values(states);
-                let completed = 0;
-                const total = stateArray.length;
+                transaction.oncomplete = () => resolve();
+                transaction.onerror = () => reject(new Error(`Transaction error: ${transaction.error?.message || 'Unknown error'}`));
+                transaction.onabort = () => reject(new Error(`Transaction aborted: ${transaction.error?.message || 'Unknown reason'}`));
 
-                stateArray.forEach((state) => {
-                    const request = store.put(state);
-                    request.onsuccess = () => {
-                        completed++;
-                        if (completed === total) {
-                            resolve();
-                        }
-                    };
-                    request.onerror = () => reject(new Error(`Failed to put state: ${request.error?.message || 'Unknown error'}`));
+                Object.values(states).forEach((state) => {
+                    store.put(state);
                 });
             });
         } catch (error) {
@@ -390,6 +338,31 @@ class SignageCacheDB {
                 console.warn('Database delete request blocked');
             };
         });
+    }
+
+    async deleteScreensAndStatesByDisplayId(displayId: string): Promise<void> {
+        try {
+            const screens = await this.getScreensByDisplayId(displayId);
+            const db = await this.getDB();
+
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([STORES.screens, STORES.states], 'readwrite');
+                const screensStore = transaction.objectStore(STORES.screens);
+                const statesStore = transaction.objectStore(STORES.states);
+
+                transaction.oncomplete = () => resolve();
+                transaction.onerror = () => reject(new Error(`Transaction error: ${transaction.error?.message || 'Unknown error'}`));
+                transaction.onabort = () => reject(new Error(`Transaction aborted: ${transaction.error?.message || 'Unknown reason'}`));
+
+                screens.forEach((screen) => {
+                    screensStore.delete(screen.id);
+                    statesStore.delete(screen.id);
+                });
+            });
+        } catch (error) {
+            console.error('Error deleting screens and states by display ID:', error);
+            throw error;
+        }
     }
 }
 

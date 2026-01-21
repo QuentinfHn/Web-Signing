@@ -1,4 +1,4 @@
-interface RetryOptions {
+export interface RetryOptions {
     maxAttempts?: number;
     initialDelay?: number;
     maxDelay?: number;
@@ -138,20 +138,16 @@ export class CircuitBreaker {
 
 export async function fetchWithRetry(
     url: string,
-    options?: RequestInit & { retry?: RetryOptions }
+    options?: RequestInit,
+    retryOptions?: RetryOptions
 ): Promise<Response> {
-    const retryOptions = options?.retry || {};
-
     return retry(async () => {
-        const response = await fetch(url, {
-            ...options,
-            retry: undefined,
-        });
+        const response = await fetch(url, options);
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         return response;
-    }, retryOptions);
+    }, retryOptions || {});
 }

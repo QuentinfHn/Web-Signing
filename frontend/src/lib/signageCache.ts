@@ -1,10 +1,20 @@
-import { cacheDB, CacheDisplay, CacheScreen, CacheState, CacheMetadata } from './cacheDB';
-import { Screen, ScreenState } from '../utils/trpc';
+import { cacheDB, CacheDisplay, CacheScreen, CacheState } from './cacheDB';
+import { ScreenState } from '../utils/websocket';
 
 interface SyncStatus {
     isSyncing: boolean;
     lastSync: Date | null;
     lastError: string | null;
+}
+
+interface CachedScreen {
+    id: string;
+    displayId: string;
+    name: string | null;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
 }
 
 class SignageCache {
@@ -53,7 +63,7 @@ class SignageCache {
         }
     }
 
-    async loadScreens(displayId: string): Promise<Screen[]> {
+    async loadScreens(displayId: string): Promise<CachedScreen[]> {
         try {
             const cachedScreens = await cacheDB.getScreensByDisplayId(displayId);
             return cachedScreens.map((s) => ({
@@ -63,10 +73,7 @@ class SignageCache {
                 x: s.x,
                 y: s.y,
                 width: s.width,
-                height: s.height,
-                contentId: s.contentId,
-                createdAt: new Date(),
-                updatedAt: new Date(s.updatedAt)
+                height: s.height
             }));
         } catch (error) {
             console.error('Failed to load screens from cache:', error);
@@ -104,21 +111,21 @@ class SignageCache {
         }
     }
 
-    async cacheScreens(screens: Screen[], displayId: string): Promise<void> {
+    async cacheScreens(screens: CachedScreen[], displayId: string): Promise<void> {
         try {
-            const cacheScreens: CacheScreen[] = screens.map((screen) => ({
+            const screensToCache: CacheScreen[] = screens.map((screen) => ({
                 id: screen.id,
                 displayId: screen.displayId,
-                name: screen.name,
+                name: screen.name || '',
                 x: screen.x,
                 y: screen.y,
                 width: screen.width,
                 height: screen.height,
-                contentId: screen.contentId || null,
-                updatedAt: screen.updatedAt.toISOString()
+                contentId: null,
+                updatedAt: new Date().toISOString()
             }));
 
-            await cacheDB.putScreens(cacheScreens);
+            await cacheDB.putScreens(screensToCache);
 
             const metadata = await cacheDB.getMetadata();
             const currentDisplayIds = metadata?.displayIds || [];
@@ -159,7 +166,7 @@ class SignageCache {
 
     async syncWithServer(displayId: string, fetchFn: {
         displays: () => Promise<CacheDisplay[]>;
-        screens: () => Promise<Screen[]>;
+        screens: () => Promise<CachedScreen[]>;
         states: () => Promise<ScreenState>;
     }): Promise<boolean> {
         if (this.syncStatus.isSyncing) {
@@ -253,23 +260,7 @@ class SignageCache {
 
     async clearDisplayData(displayId: string): Promise<void> {
         try {
-            const screens = await cacheDB.getScreensByDisplayId(displayId);
-            const screenIds = screens.map((s) => s.id);
-
-            const db = await cacheDB['getDB']();
-            const transaction = db.transaction(['screens', 'states'], 'readwrite');
-            const screensStore = transaction.objectStore('screens');
-            const statesStore = transaction.objectStore('states');
-
-            await new Promise<void>((resolve, reject) => {
-                transaction.oncomplete = () => resolve();
-                transaction.onerror = () => reject(new Error(transaction.error?.message || 'Transaction error'));
-
-                screens.forEach((screen) => {
-                    screensStore.delete(screen.id);
-                    statesStore.delete(screen.id);
-                });
-            });
+            await cacheDB.deleteScreensAndStatesByDisplayId(displayId);
         } catch (error) {
             console.error('Failed to clear display data:', error);
             throw error;
@@ -300,3 +291,4 @@ class SignageCache {
 }
 
 export const signageCache = new SignageCache();
+export type { CachedScreen, SyncStatus };
