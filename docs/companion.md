@@ -31,6 +31,8 @@ Alle endpoints vereisen authenticatie wanneer `ADMIN_PASSWORD` is ingesteld.
 | GET | `/displays` | Lijst alle displays |
 | GET | `/screens` | Lijst alle schermen |
 | GET | `/scenarios` | Lijst alle scenarios |
+| GET | `/assignments` | Lijst alle scenario assignments met content type |
+| GET | `/assignments/:screenId` | Lijst assignments voor specifiek scherm |
 | GET | `/presets` | Lijst alle presets |
 | POST | `/presets` | Maak nieuwe preset |
 | PUT | `/presets/:id` | Wijzig preset |
@@ -128,6 +130,65 @@ Activeer een scenario voor een specifiek scherm.
 
 **Errors:**
 - `404` - Scenario assignment niet gevonden voor dit scherm
+
+---
+
+## Assignments
+
+### GET /assignments
+
+Haal alle scenario assignments op inclusief content type informatie (still image of slideshow).
+
+**Response:**
+```json
+[
+  {
+    "screenId": "screen-1",
+    "scenario": "Scene 1",
+    "contentType": "still_image",
+    "imagePath": "/content/Algemeen/logo.png",
+    "intervalMs": null,
+    "images": []
+  },
+  {
+    "screenId": "screen-2",
+    "scenario": "Scene 2",
+    "contentType": "slideshow",
+    "imagePath": "/content/Promo/slide1.png",
+    "intervalMs": 5000,
+    "images": [
+      "/content/Promo/slide1.png",
+      "/content/Promo/slide2.png",
+      "/content/Promo/slide3.png"
+    ]
+  }
+]
+```
+
+**Content Type waarden:**
+- `still_image` - Enkele afbeelding (geen interval of slechts 1 afbeelding)
+- `slideshow` - Meerdere afbeeldingen met interval
+
+### GET /assignments/:screenId
+
+Haal scenario assignments op voor een specifiek scherm.
+
+**Response:**
+```json
+[
+  {
+    "screenId": "screen-1",
+    "scenario": "Scene 1",
+    "contentType": "still_image",
+    "imagePath": "/content/Algemeen/logo.png",
+    "intervalMs": null,
+    "images": []
+  }
+]
+```
+
+**Errors:**
+- `404` - Scherm niet gevonden
 
 ---
 

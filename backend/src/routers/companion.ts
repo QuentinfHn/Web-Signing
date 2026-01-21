@@ -190,6 +190,73 @@ router.delete("/presets/:id", requireCompanionAuth, async (req, res) => {
     }
 });
 
+// Get all scenario assignments with content type info
+router.get("/assignments", requireCompanionAuth, async (req, res) => {
+    try {
+        const assignments = await prisma.scenarioAssignment.findMany({
+            orderBy: [{ screenId: "asc" }, { scenario: "asc" }],
+            include: {
+                images: {
+                    orderBy: { order: "asc" },
+                    select: { imagePath: true },
+                },
+            },
+        });
+
+        const result = assignments.map((a) => ({
+            screenId: a.screenId,
+            scenario: a.scenario,
+            contentType: a.intervalMs !== null && a.images.length > 1 ? "slideshow" : "still_image",
+            imagePath: a.imagePath,
+            intervalMs: a.intervalMs,
+            images: a.images.map((img) => img.imagePath),
+        }));
+
+        res.json(result);
+    } catch (error) {
+        logger.error("Error fetching assignments:", error);
+        res.status(500).json({ error: "Failed to fetch assignments" });
+    }
+});
+
+// Get scenario assignments for a specific screen
+router.get("/assignments/:screenId", requireCompanionAuth, async (req, res) => {
+    try {
+        const screenId = Array.isArray(req.params.screenId) ? req.params.screenId[0] : req.params.screenId;
+
+        const screen = await prisma.screen.findUnique({ where: { id: screenId } });
+        if (!screen) {
+            res.status(404).json({ error: "Screen not found" });
+            return;
+        }
+
+        const assignments = await prisma.scenarioAssignment.findMany({
+            where: { screenId },
+            orderBy: { scenario: "asc" },
+            include: {
+                images: {
+                    orderBy: { order: "asc" },
+                    select: { imagePath: true },
+                },
+            },
+        });
+
+        const result = assignments.map((a) => ({
+            screenId: a.screenId,
+            scenario: a.scenario,
+            contentType: a.intervalMs !== null && a.images.length > 1 ? "slideshow" : "still_image",
+            imagePath: a.imagePath,
+            intervalMs: a.intervalMs,
+            images: a.images.map((img) => img.imagePath),
+        }));
+
+        res.json(result);
+    } catch (error) {
+        logger.error("Error fetching screen assignments:", error);
+        res.status(500).json({ error: "Failed to fetch screen assignments" });
+    }
+});
+
 router.post("/screens/:id/content", requireCompanionAuth, async (req, res) => {
     try {
         const { id } = req.params;
