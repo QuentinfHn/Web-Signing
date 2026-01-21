@@ -1,55 +1,16 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { trpcClient, Screen } from "../utils/trpc";
 import { useWebSocket, ScreenState } from "../utils/websocket";
+import { signageCache, CachedScreen } from "../lib/signageCache";
+import { useAutoSync } from "../hooks/useSync";
 import styles from "./Display.module.css";
 
 const FADE_TIME = 500;
-const STATE_STORAGE_KEY = 'signage-display-state';
-const SCREENS_STORAGE_KEY = 'signage-display-screens';
 
 // Track slideshow state per screen
 interface SlideshowState {
     currentIndex: number;
     scenario: string | null;
-}
-
-// Load cached state from localStorage
-function loadCachedState(displayId: string): ScreenState | null {
-    try {
-        const stored = localStorage.getItem(`${STATE_STORAGE_KEY}-${displayId}`);
-        return stored ? JSON.parse(stored) : null;
-    } catch {
-        return null;
-    }
-}
-
-// Save state to localStorage
-function saveCachedState(displayId: string, state: ScreenState) {
-    try {
-        localStorage.setItem(`${STATE_STORAGE_KEY}-${displayId}`, JSON.stringify(state));
-    } catch {
-        // localStorage might be full or unavailable
-    }
-}
-
-// Load cached screens from localStorage
-function loadCachedScreens(displayId: string): Screen[] | null {
-    try {
-        const stored = localStorage.getItem(`${SCREENS_STORAGE_KEY}-${displayId}`);
-        return stored ? JSON.parse(stored) : null;
-    } catch {
-        return null;
-    }
-}
-
-// Save screens to localStorage
-function saveCachedScreens(displayId: string, screens: Screen[]) {
-    try {
-        localStorage.setItem(`${SCREENS_STORAGE_KEY}-${displayId}`, JSON.stringify(screens));
-    } catch {
-        // localStorage might be full or unavailable
-    }
 }
 
 interface ImageSize {
@@ -60,31 +21,55 @@ interface ImageSize {
 export default function Display() {
     const { displayId = "display1" } = useParams<{ displayId: string }>();
 
-    // Initialize with cached data if available
-    const [screens, setScreens] = useState<Screen[]>(() => loadCachedScreens(displayId) || []);
-    const [screenStates, setScreenStates] = useState<ScreenState>(() => loadCachedState(displayId) || {});
+    // Initialize with empty state, will load from cache
+    const [screens, setScreens] = useState<CachedScreen[]>([]);
+    const [screenStates, setScreenStates] = useState<ScreenState>({});
     const [previousSrcs, setPreviousSrcs] = useState<Record<string, string>>({});
     const [fadingScreens, setFadingScreens] = useState<Set<string>>(new Set());
     const [imageSizes, setImageSizes] = useState<Record<string, ImageSize>>({});
+
+    // Auto-sync every 60 seconds
+    useAutoSync(displayId, 60000);
 
     // Slideshow state per screen
     const [slideshowStates, setSlideshowStates] = useState<Record<string, SlideshowState>>({});
     const slideshowTimersRef = useRef<Record<string, NodeJS.Timeout>>({});
 
-    // Fetch screens on mount, fallback to cached
+    // Load from cache and sync with server on mount
     useEffect(() => {
-        trpcClient.screens.getByDisplay.query({ displayId })
-            .then((data) => {
-                setScreens(data);
-                saveCachedScreens(displayId, data);
-            })
-            .catch((err) => {
-                console.error('Failed to fetch screens, using cached:', err);
-                // Already initialized with cached data
-            });
+        let mounted = true;
+
+        const initializeDisplay = async () => {
+            try {
+                await signageCache.initialize();
+
+                // Load from IndexedDB cache first
+                const [cachedScreens, cachedStates] = await Promise.all([
+                    signageCache.loadScreens(displayId),
+                    signageCache.loadStates()
+                ]);
+
+                if (mounted) {
+                    if (cachedScreens.length > 0) {
+                        setScreens(cachedScreens);
+                    }
+                    if (Object.keys(cachedStates).length > 0) {
+                        setScreenStates(cachedStates);
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to initialize display:', error);
+            }
+        };
+
+        initializeDisplay();
+
+        return () => {
+            mounted = false;
+        };
     }, [displayId]);
 
-    const handleStateUpdate = useCallback((state: ScreenState) => {
+    const handleStateUpdate = useCallback(async (state: ScreenState) => {
         const newFading = new Set<string>();
         const newPrevious: Record<string, string> = { ...previousSrcs };
 
@@ -120,8 +105,12 @@ export default function Display() {
 
         setScreenStates(state);
 
-        // Cache state to localStorage for offline use
-        saveCachedState(displayId, state);
+        // Cache state to IndexedDB for offline use
+        try {
+            await signageCache.cacheStates(state);
+        } catch (error) {
+            console.error('Failed to cache states:', error);
+        }
     }, [displayId, screenStates, previousSrcs]);
 
     useWebSocket(handleStateUpdate);
@@ -219,7 +208,7 @@ export default function Display() {
         }));
     };
 
-    const shouldUseFill = (screen: Screen, screenId: string): boolean => {
+    const shouldUseFill = (screen: CachedScreen, screenId: string): boolean => {
         const imageSize = imageSizes[screenId];
         if (!imageSize) return false;
         return imageSize.width !== screen.width || imageSize.height !== screen.height;

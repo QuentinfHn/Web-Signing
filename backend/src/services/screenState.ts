@@ -1,5 +1,5 @@
 import { WebSocketServer, WebSocket } from "ws";
-import { prisma } from "../prisma/client.js";
+import { getAllCachedScreenStates, getCachedScenario } from "./cache.js";
 
 export interface SlideshowConfig {
     images: string[];
@@ -27,23 +27,14 @@ export async function broadcastState() {
         return;
     }
 
-    const states = await prisma.screenState.findMany() ?? [];
+    const states = await getAllCachedScreenStates() ?? [];
     const stateMap: ScreenStateMap = {};
 
     for (const state of states) {
         let slideshow: SlideshowConfig | undefined;
 
-        // If there's a scenario, check for slideshow config
         if (state.scenario) {
-            const assignment = await prisma.scenarioAssignment.findUnique({
-                where: {
-                    screenId_scenario: {
-                        screenId: state.screenId,
-                        scenario: state.scenario,
-                    },
-                },
-                include: { images: { orderBy: { order: "asc" } } },
-            });
+            const assignment = await getCachedScenario(state.screenId, state.scenario);
 
             if (assignment && assignment.intervalMs && assignment.images.length > 0) {
                 slideshow = {

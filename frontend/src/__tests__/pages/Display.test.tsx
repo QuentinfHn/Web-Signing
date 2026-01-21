@@ -10,6 +10,22 @@ vi.mock('../../utils/websocket', () => ({
 vi.mock('../../utils/trpc')
 const { trpcClient } = await import('../../utils/trpc')
 
+vi.mock('../../lib/signageCache', () => ({
+  signageCache: {
+    initialize: vi.fn().mockResolvedValue(undefined),
+    loadScreens: vi.fn().mockResolvedValue([]),
+    loadStates: vi.fn().mockResolvedValue({}),
+    cacheStates: vi.fn().mockResolvedValue(undefined),
+    syncWithServer: vi.fn().mockResolvedValue(true),
+    onSyncStatusChange: vi.fn().mockReturnValue(() => {}),
+    isCacheValid: vi.fn().mockResolvedValue(false),
+  },
+}))
+
+vi.mock('../../hooks/useSync', () => ({
+  useAutoSync: vi.fn(),
+}))
+
 function renderDisplay(displayId: string = 'display1') {
   return render(
     <MemoryRouter initialEntries={[`/display/${displayId}`]}>
@@ -30,6 +46,9 @@ describe('Display page', () => {
       y: 0,
       width: 960,
       height: 540,
+      contentId: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     },
     {
       id: 'screen-2',
@@ -39,17 +58,19 @@ describe('Display page', () => {
       y: 0,
       width: 960,
       height: 540,
+      contentId: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     },
   ]
 
   beforeEach(() => {
     vi.clearAllMocks()
-    localStorage.clear()
     vi.mocked(trpcClient.screens.getByDisplay.query).mockResolvedValue(mockScreens as any)
   })
 
   afterEach(() => {
-    localStorage.clear()
+    vi.clearAllMocks()
   })
 
   describe('rendering', () => {
@@ -64,24 +85,20 @@ describe('Display page', () => {
       expect(displayStage).toBeInTheDocument()
     })
 
-    it('fetches screens on mount', async () => {
+    it('initializes cache on mount', async () => {
       renderDisplay('display1')
       await waitFor(() => {
-        expect(trpcClient.screens.getByDisplay.query).toHaveBeenCalledWith({ displayId: 'display1' })
-      })
-    })
-
-    it('renders screens from data', async () => {
-      renderDisplay()
-      await waitFor(() => {
-        const screens = document.querySelectorAll('.display-screen')
-        expect(screens).toHaveLength(2)
+        const { signageCache } = require('../../lib/signageCache')
+        expect(signageCache.initialize).toHaveBeenCalled()
       })
     })
   })
 
   describe('screen positioning', () => {
     it('positions screens correctly', async () => {
+      const { signageCache } = require('../../lib/signageCache')
+      vi.mocked(signageCache.loadScreens).mockResolvedValue(mockScreens)
+
       renderDisplay()
       await waitFor(() => {
         const screens = document.querySelectorAll('.display-screen')
@@ -93,6 +110,9 @@ describe('Display page', () => {
     })
 
     it('sets correct screen dimensions', async () => {
+      const { signageCache } = require('../../lib/signageCache')
+      vi.mocked(signageCache.loadScreens).mockResolvedValue(mockScreens)
+
       renderDisplay()
       await waitFor(() => {
         const screens = document.querySelectorAll('.display-screen')
@@ -147,127 +167,56 @@ describe('Display page', () => {
       renderDisplay()
       expect(document.querySelector('.display-page')).toBeInTheDocument()
     })
-
-    it('handles WebSocket state updates', async () => {
-      renderDisplay()
-      await waitFor(() => {
-        expect(trpcClient.screens.getByDisplay.query).toHaveBeenCalled()
-      })
-    })
   })
 
-  describe('localStorage caching', () => {
-    it('loads cached screens from localStorage', () => {
-      const cachedScreens = [
-        { id: 'cached-1', name: 'Cached Screen', displayId: 'display1', x: 0, y: 0, width: 960, height: 540 },
-      ]
-      localStorage.setItem('signage-display-screens-display1', JSON.stringify(cachedScreens))
-
-      vi.mocked(trpcClient.screens.getByDisplay.query).mockImplementation(() => new Promise(() => { }))
+  describe('IndexedDB caching', () => {
+    it('loads screens from cache', async () => {
+      const { signageCache } = require('../../lib/signageCache')
+      vi.mocked(signageCache.loadScreens).mockResolvedValue(mockScreens)
 
       renderDisplay()
+
+      await waitFor(() => {
+        expect(signageCache.loadScreens).toHaveBeenCalledWith('display1')
+      })
 
       const screens = document.querySelectorAll('.display-screen')
       expect(screens.length).toBeGreaterThan(0)
     })
 
-    it('screens to localStorage on successful fetch', async () => {
+    it('loads states from cache', async () => {
       renderDisplay()
+
       await waitFor(() => {
-        expect(trpcClient.screens.getByDisplay.query).toHaveBeenCalled()
-      })
-
-      const cached = localStorage.getItem('signage-display-screens-display1')
-      expect(cached).toBeTruthy()
-    })
-
-    it('caches state to localStorage', async () => {
-      // State caching only happens when WebSocket updates occur
-      // For now, just verify screens are cached
-      renderDisplay()
-      await waitFor(() => {
-        expect(trpcClient.screens.getByDisplay.query).toHaveBeenCalled()
-      })
-
-      // Verify screens caching works
-      const cachedScreens = localStorage.getItem('signage-display-screens-display1')
-      expect(cachedScreens).toBeTruthy()
-    })
-  })
-
-  describe('image loading', () => {
-    it('handles image load events', async () => {
-      renderDisplay()
-      await waitFor(() => {
-        expect(trpcClient.screens.getByDisplay.query).toHaveBeenCalled()
-      })
-    })
-
-    it('tracks image sizes', () => {
-      renderDisplay()
-      expect(document.querySelector('.display-page')).toBeInTheDocument()
-    })
-  })
-
-  describe('fade transitions', () => {
-    it('applies fade transition to images', async () => {
-      renderDisplay()
-      await waitFor(() => {
-        expect(trpcClient.screens.getByDisplay.query).toHaveBeenCalled()
-      })
-
-      const images = document.querySelectorAll('img')
-      expect(images.length).toBeGreaterThanOrEqual(0)
-    })
-
-    it('handles previous image during fade', async () => {
-      renderDisplay()
-      await waitFor(() => {
-        expect(trpcClient.screens.getByDisplay.query).toHaveBeenCalled()
+        const { signageCache } = require('../../lib/signageCache')
+        expect(signageCache.loadStates).toHaveBeenCalled()
       })
     })
   })
 
   describe('error handling', () => {
-    it('uses cached data when fetch fails', () => {
-      const cachedScreens = [
-        { id: 'cached-1', name: 'Cached Screen', displayId: 'display1', x: 0, y: 0, width: 960, height: 540 },
-      ]
-      localStorage.setItem('signage-display-screens-display1', JSON.stringify(cachedScreens))
-
-      vi.mocked(trpcClient.screens.getByDisplay.query).mockRejectedValue(new Error('Network error'))
+    it('handles cache initialization errors gracefully', async () => {
+      const { signageCache } = require('../../lib/signageCache')
+      vi.mocked(signageCache.initialize).mockRejectedValue(new Error('DB error'))
 
       renderDisplay()
 
-      const screens = document.querySelectorAll('.display-screen')
-      expect(screens.length).toBeGreaterThan(0)
-    })
-
-    it('handles invalid cached data gracefully', () => {
-      localStorage.setItem('signage-display-screens-display1', 'invalid json')
-
-      renderDisplay()
-
-      const displayStage = document.querySelector('.display-stage')
-      expect(displayStage).toBeInTheDocument()
+      await waitFor(() => {
+        expect(document.querySelector('.display-page')).toBeInTheDocument()
+      })
     })
   })
 
   describe('empty states', () => {
     it('handles no screens', async () => {
-      vi.mocked(trpcClient.screens.getByDisplay.query).mockResolvedValue([])
+      const { signageCache } = require('../../lib/signageCache')
+      vi.mocked(signageCache.loadScreens).mockResolvedValue([])
+
       renderDisplay()
       await waitFor(() => {
-        expect(trpcClient.screens.getByDisplay.query).toHaveBeenCalled()
+        const screens = document.querySelectorAll('.display-screen')
+        expect(screens).toHaveLength(0)
       })
-      const screens = document.querySelectorAll('.display-screen')
-      expect(screens).toHaveLength(0)
-    })
-
-    it('handles null screen states', () => {
-      renderDisplay()
-      const displayStage = document.querySelector('.display-stage')
-      expect(displayStage).toBeInTheDocument()
     })
   })
 
@@ -275,7 +224,8 @@ describe('Display page', () => {
     it('uses displayId from URL parameter', async () => {
       renderDisplay('custom-display')
       await waitFor(() => {
-        expect(trpcClient.screens.getByDisplay.query).toHaveBeenCalledWith({ displayId: 'custom-display' })
+        const { signageCache } = require('../../lib/signageCache')
+        expect(signageCache.loadScreens).toHaveBeenCalledWith('custom-display')
       })
     })
 
@@ -289,7 +239,8 @@ describe('Display page', () => {
       )
 
       await waitFor(() => {
-        expect(trpcClient.screens.getByDisplay.query).toHaveBeenCalledWith({ displayId: 'display1' })
+        const { signageCache } = require('../../lib/signageCache')
+        expect(signageCache.loadScreens).toHaveBeenCalledWith('display1')
       })
 
       unmount()

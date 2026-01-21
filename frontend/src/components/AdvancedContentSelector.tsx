@@ -18,6 +18,8 @@ export default function AdvancedContentSelector({
     const [isOpen, setIsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [activeFilter, setActiveFilter] = useState<string>("all");
+    const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
+    const triggerRef = useRef<HTMLButtonElement>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     // Get unique categories from content
@@ -90,8 +92,10 @@ export default function AdvancedContentSelector({
     // Handle click outside to close dropdown
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as unknown as Node)) {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as unknown as Node) &&
+                triggerRef.current && !triggerRef.current.contains(event.target as unknown as Node)) {
                 setIsOpen(false);
+                setDropdownPosition(null);
             }
         };
 
@@ -102,6 +106,27 @@ export default function AdvancedContentSelector({
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
+    }, [isOpen]);
+
+    // Calculate dropdown position
+    useEffect(() => {
+        if (isOpen && triggerRef.current) {
+            const triggerRect = triggerRef.current.getBoundingClientRect();
+            const windowHeight = window.innerHeight;
+            const dropdownHeight = 350;
+
+            // Calculate if dropdown should appear above or below the trigger
+            const spaceBelow = windowHeight - triggerRect.bottom;
+            const showAbove = spaceBelow < dropdownHeight + 20 && triggerRect.top > dropdownHeight + 20;
+
+            const top = showAbove ? triggerRect.top - dropdownHeight - 4 : triggerRect.bottom + 4;
+
+            setDropdownPosition({
+                top,
+                left: triggerRect.left,
+                width: triggerRect.width
+            });
+        }
     }, [isOpen]);
 
     const handleToggleFavorite = async (e: React.MouseEvent, content: Content) => {
@@ -120,11 +145,13 @@ export default function AdvancedContentSelector({
         onChange(content.path);
         setIsOpen(false);
         setSearchQuery("");
+        setDropdownPosition(null);
     };
 
     const handleClear = () => {
         onChange("");
         setIsOpen(false);
+        setDropdownPosition(null);
     };
 
     const formatFileSize = (bytes: number): string => {
@@ -146,6 +173,7 @@ export default function AdvancedContentSelector({
                 type="button"
                 className={styles.contentSelectorTrigger}
                 onClick={() => setIsOpen(!isOpen)}
+                ref={triggerRef}
             >
                 <span className={styles.selectedContent}>
                     {selectedContent ? (
@@ -161,8 +189,17 @@ export default function AdvancedContentSelector({
             </button>
 
             {/* Dropdown panel */}
-            {isOpen && (
-                <div className={styles.contentSelectorDropdown}>
+            {isOpen && dropdownPosition && (
+                <div
+                    className={styles.contentSelectorDropdown}
+                    style={{
+                        position: 'fixed',
+                        top: dropdownPosition.top,
+                        left: dropdownPosition.left,
+                        width: dropdownPosition.width,
+                        maxHeight: 'min(350px, calc(100vh - 20px))'
+                    }}
+                >
                     {/* Filter tabs */}
                     <div className={styles.filterTabs}>
                         <button

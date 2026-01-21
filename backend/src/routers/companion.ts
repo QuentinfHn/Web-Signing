@@ -2,6 +2,7 @@ import express from "express";
 import { prisma } from "../prisma/client.js";
 import { verifyToken, verifyPassword, isAuthEnabled } from "../auth/auth.js";
 import { broadcastState } from "../services/screenState.js";
+import { invalidateStateCache } from "../services/cache.js";
 import { logger } from "../utils/logger.js";
 import { apiRateLimiter } from "../middleware/rateLimit.js";
 
@@ -280,6 +281,7 @@ router.post("/screens/:id/content", requireCompanionAuth, async (req, res) => {
             create: { screenId, imageSrc },
         });
 
+        invalidateStateCache();
         await broadcastState();
         res.json({ success: true });
     } catch (error) {
@@ -317,6 +319,7 @@ router.post("/scenarios/trigger", requireCompanionAuth, async (req, res) => {
             create: { screenId, imageSrc: assignment.imagePath },
         });
 
+        invalidateStateCache();
         await broadcastState();
         res.json({ success: true });
     } catch (error) {
@@ -371,6 +374,7 @@ router.post("/presets/trigger", requireCompanionAuth, async (req, res) => {
             }
         }
 
+        invalidateStateCache();
         await broadcastState();
         res.json({ success: true });
     } catch (error) {
