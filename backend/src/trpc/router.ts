@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../prisma/client.js";
 import { verifyPassword, generateToken, isAuthEnabled } from "../auth/auth.js";
 import type { Context } from "./context.js";
+import { invalidateDisplaysCache, invalidateScreensCache, invalidateStateCache, invalidateScenarioCache, invalidateAllCache } from "../services/cache.js";
 
 const t = initTRPC.context<Context>().create();
 
@@ -115,9 +116,11 @@ export const displayRouter = router({
                 }
                 id = slug;
             }
-            return prisma.display.create({
+            const display = await prisma.display.create({
                 data: { id, name: input.name },
             });
+            invalidateDisplaysCache();
+            return display;
         }),
 
     update: protectedProcedure
@@ -127,10 +130,12 @@ export const displayRouter = router({
         }))
         .mutation(async ({ input }) => {
             const { id, ...data } = input;
-            return prisma.display.update({
+            const display = await prisma.display.update({
                 where: { id },
                 data,
             });
+            invalidateDisplaysCache();
+            return display;
         }),
 
     delete: protectedProcedure
@@ -144,6 +149,8 @@ export const displayRouter = router({
                 throw new Error(`Kan display niet verwijderen: ${screenCount} scherm(en) gekoppeld`);
             }
             await prisma.display.delete({ where: { id: input.id } });
+            invalidateDisplaysCache();
+            invalidateScreensCache(input.id);
             return { success: true };
         }),
 
@@ -196,16 +203,18 @@ export const screenRouter = router({
             height: z.number().optional(),
             name: z.string().optional().nullable(),
             displayId: z.string().optional(),
-            lat: z.number().optional().nullable(), // Allow null to clear
+            lat: z.number().optional().nullable(),
             lng: z.number().optional().nullable(),
             address: z.string().optional().nullable(),
         }))
         .mutation(async ({ input }) => {
             const { id, ...data } = input;
-            return prisma.screen.update({
+            const screen = await prisma.screen.update({
                 where: { id },
                 data,
             });
+            invalidateScreensCache(screen.displayId);
+            return screen;
         }),
 
     create: protectedProcedure
@@ -238,13 +247,20 @@ export const screenRouter = router({
                 counter++;
             }
 
-            return prisma.screen.create({ data: { id, ...input } });
+            const screen = await prisma.screen.create({ data: { id, ...input } });
+            invalidateScreensCache(input.displayId);
+            return screen;
         }),
 
     delete: protectedProcedure
         .input(z.object({ id: z.string() }))
         .mutation(async ({ input }) => {
+            const screen = await prisma.screen.findUnique({ where: { id: input.id } });
             await prisma.screen.delete({ where: { id: input.id } });
+            if (screen) {
+                invalidateScreensCache(screen.displayId);
+                invalidateStateCache(screen.id);
+            }
             return { success: true };
         }),
 
@@ -455,6 +471,7 @@ export const presetRouter = router({
                     update: { imageSrc, scenario },
                     create: { screenId, imageSrc, scenario },
                 });
+                invalidateStateCache(screenId);
             }
 
             // Broadcast state changes via WebSocket
@@ -482,6 +499,7 @@ export const stateRouter = router({
                 update: { imageSrc: input.imageSrc },
                 create: { screenId: input.screenId, imageSrc: input.imageSrc },
             });
+            invalidateStateCache(input.screenId);
             return state;
         }),
 });
@@ -778,7 +796,7 @@ export const scenariosRouter = router({
             imagePath: z.string(),
         }))
         .mutation(async ({ input }) => {
-            return prisma.scenarioAssignment.upsert({
+            const assignment = await prisma.scenarioAssignment.upsert({
                 where: {
                     screenId_scenario: {
                         screenId: input.screenId,
@@ -792,6 +810,8 @@ export const scenariosRouter = router({
                     imagePath: input.imagePath,
                 },
             });
+            invalidateScenarioCache(input.screenId, input.scenario);
+            return assignment;
         }),
 
     delete: protectedProcedure
@@ -805,6 +825,7 @@ export const scenariosRouter = router({
                     },
                 },
             });
+            invalidateScenarioCache(input.screenId, input.scenario);
             return { success: true };
         }),
 
@@ -877,7 +898,7 @@ export const scenariosRouter = router({
                 },
                 update: {
                     imagePath,
-                    intervalMs: images.length > 1 ? intervalMs : null, // Only set interval if multiple images
+                    intervalMs: images.length > 1 ? intervalMs : null,
                 },
                 create: {
                     screenId,
@@ -902,6 +923,8 @@ export const scenariosRouter = router({
                     })),
                 });
             }
+
+            invalidateScenarioCache(screenId, scenario);
 
             return {
                 ...assignment,
@@ -945,14 +968,15 @@ export const scenariosRouter = router({
             if (!assignment.intervalMs) {
                 await prisma.scenarioAssignment.update({
                     where: { id: assignment.id },
-                    data: { intervalMs: 5000 }, // Default 5 seconds
+                    data: { intervalMs: 5000 },
                 });
             }
+
+            invalidateScenarioCache(input.screenId, input.scenario);
 
             return newImage;
         }),
 
-    // Remove an image from slideshow
     removeSlideshowImage: protectedProcedure
         .input(z.object({ imageId: z.string() }))
         .mutation(async ({ input }) => {
@@ -977,10 +1001,11 @@ export const scenariosRouter = router({
                 });
             }
 
+            invalidateScenarioCache(image.assignment.screenId, image.assignment.scenario);
+
             return { success: true };
         }),
 
-    // Update slideshow image order
     updateSlideshowOrder: protectedProcedure
         .input(z.object({
             screenId: z.string(),
@@ -1024,6 +1049,8 @@ export const scenariosRouter = router({
                 });
             }
 
+            invalidateScenarioCache(input.screenId, input.scenario);
+
             return { success: true };
         }),
 
@@ -1035,7 +1062,7 @@ export const scenariosRouter = router({
             intervalMs: z.number().min(1000).max(60000).nullable(),
         }))
         .mutation(async ({ input }) => {
-            return prisma.scenarioAssignment.update({
+            const assignment = await prisma.scenarioAssignment.update({
                 where: {
                     screenId_scenario: {
                         screenId: input.screenId,
@@ -1044,6 +1071,8 @@ export const scenariosRouter = router({
                 },
                 data: { intervalMs: input.intervalMs },
             });
+            invalidateScenarioCache(input.screenId, input.scenario);
+            return assignment;
         }),
 });
 

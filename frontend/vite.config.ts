@@ -6,21 +6,84 @@ export default defineConfig({
     plugins: [
         react(),
         VitePWA({
-            registerType: "autoUpdate", // Auto-update for Kiosk mode
+            registerType: "autoUpdate",
             workbox: {
-                skipWaiting: true, // Force new SW to take over immediately
-                clientsClaim: true, // Claim clients immediately
-                globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
+                skipWaiting: true,
+                clientsClaim: true,
+                globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,mp4,webm}"],
                 cleanupOutdatedCaches: true,
+                maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
                 runtimeCaching: [
                     {
                         urlPattern: /^.*\/content\/.*/i,
-                        handler: "StaleWhileRevalidate", // Better for offline: serves cache while updating in bg
+                        handler: "CacheFirst",
                         options: {
                             cacheName: "content-images",
                             expiration: {
+                                maxEntries: 500,
+                                maxAgeSeconds: 60 * 60 * 24 * 90,
+                                purgeOnQuotaError: true,
+                            },
+                            cacheableResponse: {
+                                statuses: [0, 200],
+                            },
+                            rangeRequests: true,
+                        },
+                    },
+                    {
+                        urlPattern: /^.*\/trpc\/.*/i,
+                        handler: "NetworkFirst",
+                        options: {
+                            cacheName: "api-responses",
+                            expiration: {
+                                maxEntries: 50,
+                                maxAgeSeconds: 60 * 5,
+                                purgeOnQuotaError: true,
+                            },
+                            cacheableResponse: {
+                                statuses: [0, 200],
+                            },
+                            networkTimeoutSeconds: 10,
+                        },
+                    },
+                    {
+                        urlPattern: /^.*\/api\/.*/i,
+                        handler: "NetworkFirst",
+                        options: {
+                            cacheName: "api-responses",
+                            expiration: {
+                                maxEntries: 50,
+                                maxAgeSeconds: 60 * 5,
+                                purgeOnQuotaError: true,
+                            },
+                            cacheableResponse: {
+                                statuses: [0, 200],
+                            },
+                            networkTimeoutSeconds: 10,
+                        },
+                    },
+                    {
+                        urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/i,
+                        handler: "CacheFirst",
+                        options: {
+                            cacheName: "static-images",
+                            expiration: {
+                                maxEntries: 100,
+                                maxAgeSeconds: 60 * 60 * 24 * 30,
+                            },
+                            cacheableResponse: {
+                                statuses: [0, 200],
+                            },
+                        },
+                    },
+                    {
+                        urlPattern: /\.(?:js|css)$/i,
+                        handler: "StaleWhileRevalidate",
+                        options: {
+                            cacheName: "static-resources",
+                            expiration: {
                                 maxEntries: 200,
-                                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+                                maxAgeSeconds: 60 * 60 * 24 * 7,
                             },
                             cacheableResponse: {
                                 statuses: [0, 200],
@@ -28,6 +91,8 @@ export default defineConfig({
                         },
                     },
                 ],
+                navigateFallback: "/index.html",
+                navigateFallbackDenylist: [/^\/api/, /^\/trpc/, /^\/content/, /^\/ws/],
             },
             manifest: {
                 name: "LED Controller",
