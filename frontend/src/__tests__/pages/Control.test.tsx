@@ -45,7 +45,7 @@ vi.mock('../../utils/websocket', () => ({
 }))
 
 vi.mock('../../components/AdvancedContentSelector', () => ({
-  default: function MockAdvancedContentSelector({ value, onChange }: any) {
+  default: function MockAdvancedContentSelector({ value, onChange }: { value: string, onChange: (val: string) => void }) {
     return (
       <select data-testid="content-selector" value={value} onChange={(e) => onChange(e.target.value)}>
         <option value="">-- Select Content --</option>

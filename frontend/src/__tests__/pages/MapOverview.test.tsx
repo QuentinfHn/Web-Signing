@@ -47,17 +47,17 @@ vi.mock('leaflet/dist/images/marker-icon.png', () => ({ default: 'marker-icon.pn
 vi.mock('leaflet/dist/images/marker-shadow.png', () => ({ default: 'marker-shadow.png' }))
 
 vi.mock('react-leaflet', () => ({
-  MapContainer: ({ children, center, zoom }: any) => (
+  MapContainer: ({ children, center, zoom }: { children: React.ReactNode, center: [number, number], zoom: number }) => (
     <div data-testid="map-container" data-center={center} data-zoom={zoom}>
       {children}
     </div>
   ),
-  TileLayer: ({ attribution, url }: any) => (
+  TileLayer: ({ attribution, url }: { attribution: string, url: string }) => (
     <div data-tile-url={url} data-attribution={attribution}>
       <div className="tile-layer">Tile Layer</div>
     </div>
   ),
-  Marker: ({ position, children, eventHandlers }: any) => (
+  Marker: ({ position, children, eventHandlers }: { position: [number, number], children?: React.ReactNode, eventHandlers?: { click?: () => void } }) => (
     <div data-testid="marker" data-position={position.join(',')}>
       {children}
       <button
@@ -68,7 +68,7 @@ vi.mock('react-leaflet', () => ({
       </button>
     </div>
   ),
-  Popup: ({ children }: any) => (
+  Popup: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="popup">
       {children}
     </div>
