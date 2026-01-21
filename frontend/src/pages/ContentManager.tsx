@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { trpcClient, Content, getAuthHeaders } from "../utils/trpc";
+import styles from "./ContentManager.module.css";
+import buttonStyles from "../components/Button.module.css";
+import modalStyles from "../components/Modal.module.css";
+import formStyles from "../components/Form.module.css";
 
 // Get backend URL for uploads
 const API_BASE = "";
@@ -12,6 +16,7 @@ export default function ContentManager() {
     const [isDragging, setIsDragging] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [renameModal, setRenameModal] = useState<{ content: Content; newName: string } | null>(null);
+    const [scanResult, setScanResult] = useState<{ type: "success" | "info" | "error"; message: string } | null>(null);
 
     // Fetch categories and content
     const loadContent = useCallback(async () => {
@@ -149,13 +154,37 @@ export default function ContentManager() {
     };
 
     return (
-        <div className="content-manager">
+        <div className={styles.contentManager}>
             <header>
                 <h1>📁 Content Manager</h1>
-                <Link to="/" className="back-link">← Terug</Link>
+                <div className={styles.headerActions}>
+                    <button
+                        className={styles.scanBtn}
+                        onClick={async () => {
+                            try {
+                                const result = await trpcClient.content.scan.mutate();
+                                if (result.added > 0) {
+                                    setScanResult({ type: "success", message: `✅ ${result.added} nieuwe bestand(en) gevonden` });
+                                    loadContent();
+                                } else {
+                                    setScanResult({ type: "info", message: "Geen nieuwe bestanden gevonden" });
+                                }
+                            } catch (error) {
+                                console.error("Scan error:", error);
+                                setScanResult({ type: "error", message: "Scannen mislukt" });
+                            }
+                            // Auto-hide after 3 seconds
+                            setTimeout(() => setScanResult(null), 3000);
+                        }}
+                        title="Scan folder voor nieuwe bestanden"
+                    >
+                        🔄 Scan folder
+                    </button>
+                    <Link to="/" className={buttonStyles.backLink}>← Terug</Link>
+                </div>
             </header>
 
-            <div className="category-selector">
+            <div className={styles.categorySelector}>
                 <label>Categorie:</label>
                 <select
                     value={selectedCategory}
@@ -184,7 +213,7 @@ export default function ContentManager() {
             </div>
 
             <div
-                className={`upload-zone ${isDragging ? "dragging" : ""} ${uploading ? "uploading" : ""}`}
+                className={`${styles.uploadZone} ${isDragging ? styles.dragging : ""} ${uploading ? styles.uploading : ""}`}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
@@ -194,7 +223,7 @@ export default function ContentManager() {
                 ) : (
                     <>
                         <p>📤 Sleep bestanden hierheen of</p>
-                        <label className="upload-button">
+                        <label className={styles.uploadButton}>
                             Kies bestand
                             <input
                                 type="file"
@@ -208,29 +237,29 @@ export default function ContentManager() {
                 )}
             </div>
 
-            <div className="content-grid">
+            <div className={styles.contentGrid}>
                 {contents.length === 0 ? (
-                    <p className="empty-message">Geen content in deze categorie</p>
+                    <p className={styles.emptyMessage}>Geen content in deze categorie</p>
                 ) : (
                     contents.map((content) => (
-                        <div key={content.id} className="content-card">
+                        <div key={content.id} className={styles.contentCard}>
                             {content.mimeType.startsWith("image/") ? (
                                 <img src={content.path} alt={content.filename} />
                             ) : (
                                 <video src={content.path} />
                             )}
-                            <div className="content-info">
-                                <span className="filename">{content.filename}</span>
-                                <div className="content-actions">
+                            <div className={styles.contentInfo}>
+                                <span className={styles.filename}>{content.filename}</span>
+                                <div className={styles.contentActions}>
                                     <button
-                                        className="rename-btn"
+                                        className={styles.renameBtn}
                                         onClick={() => handleRename(content)}
                                         title="Hernoemen"
                                     >
                                         ✏️
                                     </button>
                                     <button
-                                        className="delete-btn"
+                                        className={styles.deleteBtn}
                                         onClick={() => handleDelete(content)}
                                         title="Verwijderen"
                                     >
@@ -245,14 +274,14 @@ export default function ContentManager() {
 
             {/* Rename Modal */}
             {renameModal && (
-                <div className="confirm-overlay" onClick={() => setRenameModal(null)}>
-                    <div className="rename-dialog" onClick={(e) => e.stopPropagation()}>
-                        <div className="confirm-icon">✏️</div>
+                <div className={modalStyles.confirmOverlay} onClick={() => setRenameModal(null)}>
+                    <div className={modalStyles.renameDialog} onClick={(e) => e.stopPropagation()}>
+                        <div className={modalStyles.confirmIcon}>✏️</div>
                         <h3>Bestand hernoemen</h3>
                         <p>Voer een nieuwe naam in voor dit bestand:</p>
                         <input
                             type="text"
-                            className="rename-input"
+                            className={formStyles.renameInput}
                             value={renameModal.newName}
                             onChange={(e) => setRenameModal({ ...renameModal, newName: e.target.value })}
                             onKeyDown={(e) => {
@@ -261,21 +290,31 @@ export default function ContentManager() {
                             }}
                             autoFocus
                         />
-                        <div className="confirm-buttons">
+                        <div className={modalStyles.confirmButtons}>
                             <button
-                                className="btn-secondary"
+                                className={buttonStyles.btnSecondary}
                                 onClick={() => setRenameModal(null)}
                             >
                                 Annuleren
                             </button>
                             <button
-                                className="btn-primary"
+                                className={buttonStyles.btnPrimary}
                                 onClick={submitRename}
                             >
                                 Hernoemen
                             </button>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* Scan Result Toast */}
+            {scanResult && (
+                <div
+                    className={`${styles.toast} ${styles[scanResult.type]}`}
+                    onClick={() => setScanResult(null)}
+                >
+                    {scanResult.message}
                 </div>
             )}
         </div>

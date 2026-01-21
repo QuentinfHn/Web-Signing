@@ -3,10 +3,21 @@ import { Link } from "react-router-dom";
 import { trpcClient, Preset, Content, Screen, Scenario, Display } from "../utils/trpc";
 import { useWebSocket, ScreenState } from "../utils/websocket";
 import AdvancedContentSelector from "../components/AdvancedContentSelector";
+import styles from "./Control.module.css";
+import buttonStyles from "../components/Button.module.css";
+import formStyles from "../components/Form.module.css";
+import modalStyles from "../components/Modal.module.css";
+import slideshowStyles from "../components/SlideshowEditor.module.css";
 
 // Scenarios are now fetched from DB
 
-type ScenarioAssignments = Record<string, Record<string, string>>;
+interface ScenarioData {
+    imagePath: string;
+    intervalMs: number | null;
+    images: string[];
+}
+
+type ScenarioAssignments = Record<string, Record<string, ScenarioData>>;
 
 interface PresetModalProps {
     preset?: Preset;
@@ -62,35 +73,35 @@ const PresetModal = ({ preset, screens, displays, scenarios, onSave, onClose }: 
     };
 
     return (
-        <div className="modal-overlay">
-            <div className="modal-content preset-modal">
+        <div className={modalStyles.modalOverlay}>
+            <div className={`${modalStyles.modalContent} ${styles.presetModal}`}>
                 <h3>{preset ? "Preset Bewerken" : "Nieuwe Preset"}</h3>
-                <div className="form-group">
+                <div className={formStyles.formGroup}>
                     <label>Naam:</label>
                     <input
                         type="text"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="modal-input"
+                        className={formStyles.modalInput}
                         placeholder="Preset naam"
                         autoFocus
                     />
                 </div>
-                <div className="form-group">
+                <div className={formStyles.formGroup}>
                     <label>Scenario per scherm:</label>
-                    <div className="preset-screens-grid">
+                    <div className={styles.presetScreensGrid}>
                         {Object.entries(screensByDisplay).map(([displayId, displayScreens]) => (
-                            <div key={displayId} className="preset-display-group">
-                                <div className="preset-display-header">
+                            <div key={displayId} className={styles.presetDisplayGroup}>
+                                <div className={styles.presetDisplayHeader}>
                                     {getDisplayName(displayId)}
                                 </div>
                                 {displayScreens.map((screen) => (
-                                    <div key={screen.id} className="preset-screen-row">
-                                        <span className="preset-screen-name">{screen.name || screen.id}</span>
+                                    <div key={screen.id} className={styles.presetScreenRow}>
+                                        <span className={styles.presetScreenName}>{screen.name || screen.id}</span>
                                         <select
                                             value={scenarioMappings[screen.id] || ""}
                                             onChange={(e) => handleScenarioChange(screen.id, e.target.value)}
-                                            className="modal-select"
+                                            className={formStyles.modalSelect}
                                         >
                                             <option value="">-- Geen --</option>
                                             {scenarios.map((scenario) => (
@@ -105,53 +116,230 @@ const PresetModal = ({ preset, screens, displays, scenarios, onSave, onClose }: 
                         ))}
                     </div>
                 </div>
-                <div className="modal-actions">
-                    <button onClick={onClose} className="btn-secondary">Annuleren</button>
-                    <button onClick={handleSave} className="btn-primary">Opslaan</button>
+                <div className={modalStyles.modalActions}>
+                    <button onClick={onClose} className={buttonStyles.btnSecondary}>Annuleren</button>
+                    <button onClick={handleSave} className={buttonStyles.btnPrimary}>Opslaan</button>
                 </div>
             </div>
         </div>
     );
 };
 
+interface SlideshowEditorProps {
+    images: string[];
+    intervalMs: number | null;
+    contentLibrary: Content[];
+    onImagesChange: (images: string[]) => void;
+    onIntervalChange: (intervalMs: number | null) => void;
+    onContentUpdate: (updatedContent: Content) => void;
+}
+
+const SlideshowEditor = ({ images, intervalMs, contentLibrary, onImagesChange, onIntervalChange, onContentUpdate }: SlideshowEditorProps) => {
+    const [showAddModal, setShowAddModal] = useState(false);
+
+    const getContentByPath = (path: string): Content | undefined => {
+        return contentLibrary.find(c => c.path === path);
+    };
+
+    const handleAddImage = (path: string) => {
+        if (path && !images.includes(path)) {
+            onImagesChange([...images, path]);
+        }
+        setShowAddModal(false);
+    };
+
+    const handleRemoveImage = (index: number) => {
+        const newImages = images.filter((_, i) => i !== index);
+        onImagesChange(newImages);
+        // Clear interval if only one image left
+        if (newImages.length <= 1) {
+            onIntervalChange(null);
+        }
+    };
+
+    const handleClearAll = () => {
+        onImagesChange([]);
+        onIntervalChange(null);
+    };
+
+    const handleMoveUp = (index: number) => {
+        if (index === 0) return;
+        const newImages = [...images];
+        [newImages[index - 1], newImages[index]] = [newImages[index], newImages[index - 1]];
+        onImagesChange(newImages);
+    };
+
+    const handleMoveDown = (index: number) => {
+        if (index === images.length - 1) return;
+        const newImages = [...images];
+        [newImages[index], newImages[index + 1]] = [newImages[index + 1], newImages[index]];
+        onImagesChange(newImages);
+    };
+
+    const handleIntervalChange = (seconds: number) => {
+        if (seconds >= 1 && seconds <= 60) {
+            onIntervalChange(seconds * 1000);
+        }
+    };
+
+    return (
+        <div className={slideshowStyles.slideshowEditor}>
+            <div className={slideshowStyles.slideshowImagesList}>
+                {images.length === 0 ? (
+                    <div className={slideshowStyles.slideshowEmpty}>Geen afbeeldingen. Voeg er een toe.</div>
+                ) : (
+                    images.map((path, index) => {
+                        const content = getContentByPath(path);
+                        return (
+                            <div key={`${path}-${index}`} className={slideshowStyles.slideshowImageItem}>
+                                <span className={slideshowStyles.slideshowOrder}>{index + 1}</span>
+                                <span className={slideshowStyles.slideshowFilename}>
+                                    {content?.filename || path.split('/').pop()}
+                                </span>
+                                <div className={slideshowStyles.slideshowItemActions}>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleMoveUp(index)}
+                                        disabled={index === 0}
+                                        className={buttonStyles.btnIcon}
+                                        title="Omhoog"
+                                    >
+                                        ↑
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleMoveDown(index)}
+                                        disabled={index === images.length - 1}
+                                        className={buttonStyles.btnIcon}
+                                        title="Omlaag"
+                                    >
+                                        ↓
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveImage(index)}
+                                        className={`${buttonStyles.btnIcon} ${buttonStyles.btnDelete}`}
+                                        title="Verwijderen"
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    })
+                )}
+            </div>
+
+            <div className={slideshowStyles.slideshowActions}>
+                <button
+                    type="button"
+                    onClick={() => setShowAddModal(true)}
+                    className={`${buttonStyles.btnSecondary} ${buttonStyles.btnSmall}`}
+                >
+                    + Afbeelding toevoegen
+                </button>
+                {images.length > 0 && (
+                    <button
+                        type="button"
+                        onClick={handleClearAll}
+                        className={`${buttonStyles.btnSecondary} ${buttonStyles.btnSmall} ${buttonStyles.btnClear}`}
+                    >
+                        Wis alles
+                    </button>
+                )}
+            </div>
+
+            {images.length > 1 && (
+                <div className={slideshowStyles.slideshowInterval}>
+                    <label>Interval (seconden):</label>
+                    <input
+                        type="number"
+                        min={1}
+                        max={60}
+                        value={intervalMs ? Math.round(intervalMs / 1000) : 5}
+                        onChange={(e) => handleIntervalChange(parseInt(e.target.value) || 5)}
+                        className={formStyles.intervalInput}
+                    />
+                </div>
+            )}
+
+            {showAddModal && (
+                <div className={slideshowStyles.slideshowAddModal}>
+                    <div className={slideshowStyles.slideshowAddContent}>
+                        <h4>Afbeelding selecteren</h4>
+                        <AdvancedContentSelector
+                            value=""
+                            onChange={handleAddImage}
+                            contentLibrary={contentLibrary.filter(c => !images.includes(c.path))}
+                            onContentUpdate={onContentUpdate}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowAddModal(false)}
+                            className={buttonStyles.btnSecondary}
+                        >
+                            Annuleren
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
 interface SceneSettingsModalProps {
     scenarioName: string;
-    currentPath: string | undefined;
+    currentData: ScenarioData | undefined;
     contentLibrary: Content[];
-    onSave: (newName: string, newPath: string) => void;
+    onSave: (newName: string, images: string[], intervalMs: number | null) => void;
     onClose: () => void;
     onContentUpdate: (updatedContent: Content) => void;
 }
 
-const SceneSettingsModal = ({ scenarioName, currentPath, contentLibrary, onSave, onClose, onContentUpdate }: SceneSettingsModalProps) => {
+const SceneSettingsModal = ({ scenarioName, currentData, contentLibrary, onSave, onClose, onContentUpdate }: SceneSettingsModalProps) => {
     const [name, setName] = useState(scenarioName);
-    const [path, setPath] = useState(currentPath || "");
+    const [images, setImages] = useState<string[]>(() => {
+        if (currentData?.images && currentData.images.length > 0) {
+            return currentData.images;
+        }
+        if (currentData?.imagePath) {
+            return [currentData.imagePath];
+        }
+        return [];
+    });
+    const [intervalMs, setIntervalMs] = useState<number | null>(currentData?.intervalMs ?? 5000);
+
+    const handleSave = () => {
+        onSave(name, images, images.length > 1 ? intervalMs : null);
+    };
 
     return (
-        <div className="modal-overlay">
-            <div className="modal-content modal-content-wide">
+        <div className={modalStyles.modalOverlay}>
+            <div className={`${modalStyles.modalContent} ${modalStyles.modalContentWide}`}>
                 <h3>Instellingen voor {scenarioName}</h3>
-                <div className="form-group">
+                <div className={formStyles.formGroup}>
                     <label>Naam:</label>
                     <input
                         type="text"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="modal-input"
+                        className={formStyles.modalInput}
                     />
                 </div>
-                <div className="form-group">
-                    <label>Content:</label>
-                    <AdvancedContentSelector
-                        value={path}
-                        onChange={setPath}
+                <div className={formStyles.formGroup}>
+                    <label>Slideshow afbeeldingen:</label>
+                    <SlideshowEditor
+                        images={images}
+                        intervalMs={intervalMs}
                         contentLibrary={contentLibrary}
+                        onImagesChange={setImages}
+                        onIntervalChange={setIntervalMs}
                         onContentUpdate={onContentUpdate}
                     />
                 </div>
-                <div className="modal-actions">
-                    <button onClick={onClose} className="btn-secondary">Annuleren</button>
-                    <button onClick={() => onSave(name, path)} className="btn-primary">Opslaan</button>
+                <div className={modalStyles.modalActions}>
+                    <button onClick={onClose} className={buttonStyles.btnSecondary}>Annuleren</button>
+                    <button onClick={handleSave} className={buttonStyles.btnPrimary}>Opslaan</button>
                 </div>
             </div>
         </div>
@@ -258,7 +446,7 @@ export default function Control() {
         }
     };
 
-    const handleSaveSettings = async (screenId: string, oldScenarioName: string, newName: string, newPath: string) => {
+    const handleSaveSettings = async (screenId: string, oldScenarioName: string, newName: string, images: string[], intervalMs: number | null) => {
         try {
             // 1. Handle Rename if changed
             if (newName && newName.trim() !== oldScenarioName) {
@@ -270,28 +458,60 @@ export default function Control() {
                     const updated: ScenarioAssignments = {};
                     Object.entries(prev).forEach(([sId, assignments]) => {
                         updated[sId] = {};
-                        Object.entries(assignments).forEach(([sc, path]) => {
+                        Object.entries(assignments).forEach(([sc, data]) => {
                             const key = sc === oldScenarioName ? newName : sc;
-                            updated[sId][key] = path;
+                            updated[sId][key] = data;
                         });
                     });
                     return updated;
                 });
             }
 
-            // 2. Handle Content Assignment
             // Use the NEW name if we renamed it, otherwise the old name
             const targetScenarioName = (newName && newName.trim() !== oldScenarioName) ? newName : oldScenarioName;
 
-            await trpcClient.scenarios.set.mutate({ screenId, scenario: targetScenarioName, imagePath: newPath });
-
-            setScenarioAssignments(prev => ({
-                ...prev,
-                [screenId]: {
-                    ...prev[screenId],
-                    [targetScenarioName]: newPath
+            // 2. Handle Assignment - delete if no images, otherwise set slideshow
+            if (images.length === 0) {
+                // Delete the assignment
+                try {
+                    await trpcClient.scenarios.delete.mutate({
+                        screenId,
+                        scenario: targetScenarioName
+                    });
+                } catch {
+                    // Assignment might not exist, that's fine
                 }
-            }));
+
+                // Remove from local state
+                setScenarioAssignments(prev => {
+                    const screenAssignments = { ...prev[screenId] };
+                    delete screenAssignments[targetScenarioName];
+                    return {
+                        ...prev,
+                        [screenId]: screenAssignments
+                    };
+                });
+            } else {
+                // Set slideshow with images
+                await trpcClient.scenarios.setSlideshow.mutate({
+                    screenId,
+                    scenario: targetScenarioName,
+                    images,
+                    intervalMs
+                });
+
+                setScenarioAssignments(prev => ({
+                    ...prev,
+                    [screenId]: {
+                        ...prev[screenId],
+                        [targetScenarioName]: {
+                            imagePath: images[0],
+                            intervalMs,
+                            images
+                        }
+                    }
+                }));
+            }
 
             setEditingState(null);
         } catch (error) {
@@ -306,7 +526,7 @@ export default function Control() {
         }
     };
 
-    const getScenarioPath = (screenId: string, scenario: string): string | undefined => {
+    const getScenarioData = (screenId: string, scenario: string): ScenarioData | undefined => {
         return scenarioAssignments[screenId]?.[scenario];
     };
 
@@ -325,29 +545,29 @@ export default function Control() {
     }, {});
 
     return (
-        <div className="control-page">
+        <div className={styles.controlPage}>
             <header>
                 <h1>Control Panel</h1>
-                <div className="header-actions">
-                    <span className={`connection-status ${connected ? "connected" : "disconnected"}`}>
+                <div className={styles.headerActions}>
+                    <span className={`${styles.connectionStatus} ${connected ? styles.connected : styles.disconnected}`}>
                         {connected ? "Verbonden" : "Niet verbonden"}
                     </span>
-                    <Link to="/" className="back-link">Terug</Link>
+                    <Link to="/" className={buttonStyles.backLink}>Terug</Link>
                 </div>
             </header>
 
             {Object.entries(screensByDisplay).map(([displayId, displayScreens]) => (
-                <section key={displayId} className="control-section">
+                <section key={displayId} className={styles.controlSection}>
                     <h2>📺 {getDisplayName(displayId)}</h2>
-                    <div className="screens-grid">
+                    <div className={styles.screensGrid}>
                         {displayScreens.map((screen) => (
-                            <div key={screen.id} className="screen-card">
+                            <div key={screen.id} className={styles.screenCard}>
                                 <h3>{screen.name || screen.id}</h3>
-                                <div className="radio-group">
+                                <div className={styles.radioGroup}>
                                     {/* Uit optie om scherm leeg te maken */}
-                                    <div className="scenario-row">
-                                        <div className="radio-option">
-                                            <label className="radio-label">
+                                    <div className={styles.scenarioRow}>
+                                        <div className={styles.radioOption}>
+                                            <label className={styles.radioLabel}>
                                                 <input
                                                     type="radio"
                                                     name={screen.id}
@@ -355,18 +575,20 @@ export default function Control() {
                                                     checked={!screenStates[screen.id]?.scenario}
                                                     onChange={() => handleRadioChange(screen.id, "")}
                                                 />
-                                                <span className="scenario-name scenario-off">⭘ Uit</span>
+                                                <span className={`${styles.scenarioName} ${styles.scenarioOff}`}>⭘ Uit</span>
                                             </label>
                                         </div>
                                     </div>
                                     {scenarios.map((scenario) => {
-                                        const imagePath = getScenarioPath(screen.id, scenario);
+                                        const scenarioData = getScenarioData(screen.id, scenario);
+                                        const imagePath = scenarioData?.imagePath;
+                                        const isSlideshow = scenarioData && scenarioData.images && scenarioData.images.length > 1;
                                         const isSelected = screenStates[screen.id]?.scenario === scenario;
 
                                         return (
-                                            <div key={scenario} className="scenario-row">
+                                            <div key={scenario} className={styles.scenarioRow}>
                                                 <div
-                                                    className={`radio-option clickable-row ${isSelected ? 'selected' : ''} ${!imagePath ? 'disabled' : ''}`}
+                                                    className={`${styles.radioOption} ${styles.clickableRow} ${isSelected ? styles.selected : ''} ${!imagePath ? styles.disabled : ''}`}
                                                     onClick={() => handleRowClick(screen.id, scenario, imagePath)}
                                                 >
                                                     <input
@@ -377,16 +599,16 @@ export default function Control() {
                                                         onChange={() => { }}
                                                         disabled={!imagePath}
                                                     />
-                                                    <span className="scenario-name">{scenario}</span>
+                                                    <span className={styles.scenarioName}>{scenario}</span>
 
                                                     {imagePath && (
-                                                        <span className="assigned-content-indicator">
-                                                            ✓
+                                                        <span className={styles.assignedContentIndicator} title={isSlideshow ? `Slideshow: ${scenarioData.images.length} afbeeldingen` : 'Enkele afbeelding'}>
+                                                            {isSlideshow ? `🎬 ${scenarioData.images.length}` : '✓'}
                                                         </span>
                                                     )}
 
                                                     <button
-                                                        className="settings-btn"
+                                                        className={styles.settingsBtn}
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             setEditingState({ screenId: screen.id, scenario });
@@ -406,28 +628,28 @@ export default function Control() {
                 </section>
             ))}
 
-            <section className="control-section">
-                <div className="section-header">
+            <section className={styles.controlSection}>
+                <div className={styles.sectionHeader}>
                     <h2>🎬 Presets</h2>
                     <button
-                        className="btn-primary btn-small"
+                        className={`${buttonStyles.btnPrimary} ${buttonStyles.btnSmall}`}
                         onClick={() => setPresetModal({ mode: "create", timestamp: Date.now() })}
                     >
                         + Nieuw
                     </button>
                 </div>
-                <div className="presets-container">
+                <div className={styles.presetsContainer}>
                     {presets.map((preset) => (
-                        <div key={preset.id} className="preset-item">
+                        <div key={preset.id} className={styles.presetItem}>
                             <button
-                                className="preset-button"
+                                className={styles.presetButton}
                                 onClick={() => handlePresetClick(preset)}
                             >
                                 {preset.name}
                             </button>
-                            <div className="preset-actions">
+                            <div className={styles.presetActions}>
                                 <button
-                                    className="btn-icon btn-edit"
+                                    className={`${buttonStyles.btnIcon} ${buttonStyles.btnEdit}`}
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         setPresetModal({ mode: "edit", preset });
@@ -437,7 +659,7 @@ export default function Control() {
                                     ✏️
                                 </button>
                                 <button
-                                    className="btn-icon btn-delete"
+                                    className={`${buttonStyles.btnIcon} ${buttonStyles.btnDelete}`}
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         handleDeletePreset(preset);
@@ -450,7 +672,7 @@ export default function Control() {
                         </div>
                     ))}
                     {presets.length === 0 && (
-                        <p className="empty-message-inline">Geen presets. Maak er een aan!</p>
+                        <p className={styles.emptyMessageInline}>Geen presets. Maak er een aan!</p>
                     )}
                 </div>
             </section>
@@ -459,9 +681,9 @@ export default function Control() {
             {editingState && (
                 <SceneSettingsModal
                     scenarioName={editingState.scenario}
-                    currentPath={getScenarioPath(editingState.screenId, editingState.scenario)}
+                    currentData={getScenarioData(editingState.screenId, editingState.scenario)}
                     contentLibrary={contentLibrary}
-                    onSave={(newName, newPath) => handleSaveSettings(editingState.screenId, editingState.scenario, newName, newPath)}
+                    onSave={(newName, images, intervalMs) => handleSaveSettings(editingState.screenId, editingState.scenario, newName, images, intervalMs)}
                     onClose={() => setEditingState(null)}
                     onContentUpdate={(updatedContent) => {
                         setContentLibrary(prev =>
