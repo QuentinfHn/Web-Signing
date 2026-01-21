@@ -70,7 +70,7 @@
     border-radius: 12px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
     z-index: 2000;
-    max-height: 350px;
+    max-height: min(350px, 50vh);
     display: flex;
     flex-direction: column;
     overflow: hidden;

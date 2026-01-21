@@ -136,6 +136,14 @@ interface SlideshowEditorProps {
 
 const SlideshowEditor = ({ images, intervalMs, contentLibrary, onImagesChange, onIntervalChange, onContentUpdate }: SlideshowEditorProps) => {
     const [showAddModal, setShowAddModal] = useState(false);
+    const [intervalInput, setIntervalInput] = useState<string>(
+        intervalMs ? String(Math.round(intervalMs / 1000)) : "5"
+    );
+
+    // Sync intervalInput when intervalMs prop changes
+    useEffect(() => {
+        setIntervalInput(intervalMs ? String(Math.round(intervalMs / 1000)) : "5");
+    }, [intervalMs]);
 
     const getContentByPath = (path: string): Content | undefined => {
         return contentLibrary.find(c => c.path === path);
@@ -176,9 +184,18 @@ const SlideshowEditor = ({ images, intervalMs, contentLibrary, onImagesChange, o
         onImagesChange(newImages);
     };
 
-    const handleIntervalChange = (seconds: number) => {
-        if (seconds >= 1 && seconds <= 60) {
-            onIntervalChange(seconds * 1000);
+    const handleIntervalInputChange = (value: string) => {
+        // Only allow digits
+        if (value === "" || /^\d+$/.test(value)) {
+            setIntervalInput(value);
+            if (value === "") {
+                onIntervalChange(null);
+            } else {
+                const seconds = parseInt(value);
+                if (!isNaN(seconds) && seconds >= 1) {
+                    onIntervalChange(seconds * 1000);
+                }
+            }
         }
     };
 
@@ -253,11 +270,11 @@ const SlideshowEditor = ({ images, intervalMs, contentLibrary, onImagesChange, o
                 <div className={slideshowStyles.slideshowInterval}>
                     <label>Interval (seconden):</label>
                     <input
-                        type="number"
-                        min={1}
-                        max={60}
-                        value={intervalMs ? Math.round(intervalMs / 1000) : 5}
-                        onChange={(e) => handleIntervalChange(parseInt(e.target.value) || 5)}
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={intervalInput}
+                        onChange={(e) => handleIntervalInputChange(e.target.value)}
                         className={formStyles.intervalInput}
                     />
                 </div>
@@ -310,7 +327,9 @@ const SceneSettingsModal = ({ scenarioName, currentData, contentLibrary, onSave,
     const [intervalMs, setIntervalMs] = useState<number | null>(currentData?.intervalMs ?? 5000);
 
     const handleSave = () => {
-        onSave(name, images, images.length > 1 ? intervalMs : null);
+        // Default to 5000ms if interval is empty/null
+        const finalInterval = images.length > 1 ? (intervalMs || 5000) : null;
+        onSave(name, images, finalInterval);
     };
 
     return (

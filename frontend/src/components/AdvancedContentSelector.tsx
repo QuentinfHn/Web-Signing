@@ -36,13 +36,20 @@ export default function AdvancedContentSelector({
         let filtered = contentLibrary;
 
         // Apply category filter
-        if (activeFilter !== "all" && activeFilter !== "favorites") {
+        if (activeFilter !== "all" && activeFilter !== "favorites" && activeFilter !== "recent") {
             filtered = filtered.filter((c) => c.category === activeFilter);
         }
 
         // Apply favorites filter
         if (activeFilter === "favorites") {
             filtered = filtered.filter((c) => c.isFavorite);
+        }
+
+        // Apply recent filter (last 2 created)
+        if (activeFilter === "recent") {
+            filtered = [...filtered]
+                .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                .slice(0, 2);
         }
 
         // Apply search filter
@@ -66,14 +73,6 @@ export default function AdvancedContentSelector({
             groups["Favorieten"] = favorites;
         }
 
-        // Add recent items (last 5 created)
-        const recent = [...filteredContent]
-            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-            .slice(0, 5);
-        if (recent.length > 0 && activeFilter === "all" && !searchQuery) {
-            groups["Recent"] = recent;
-        }
-
         // Group by category
         filteredContent.forEach((content) => {
             const category = content.category.toUpperCase();
@@ -86,7 +85,7 @@ export default function AdvancedContentSelector({
         });
 
         return groups;
-    }, [filteredContent, activeFilter, searchQuery]);
+    }, [filteredContent, activeFilter]);
 
     // Handle click outside to close dropdown
     useEffect(() => {
@@ -177,6 +176,12 @@ export default function AdvancedContentSelector({
                             onClick={() => setActiveFilter("favorites")}
                         >
                             ★ Favorieten
+                        </button>
+                        <button
+                            className={`${styles.filterTab} ${activeFilter === "recent" ? styles.active : ""}`}
+                            onClick={() => setActiveFilter("recent")}
+                        >
+                            Recent
                         </button>
                         {categories.slice(0, 3).map((cat) => (
                             <button
