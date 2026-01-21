@@ -1,32 +1,20 @@
 import { Screen } from "../../utils/trpc";
 import { LocationMode } from "../../types/screen";
 import { GeocodeResult } from "../../hooks/useGeocode";
+import { NewScreenData } from "../../hooks/useScreenEditor";
 import styles from "../../pages/ScreenEditor.module.css";
 import buttonStyles from "../Button.module.css";
-import formStyles from "../Form.module.css";
 
 interface ScreenPropertiesProps {
     isCreating: boolean;
     editingId: string | null;
     formData: Partial<Screen>;
-    newScreenData: {
-        displayId: string;
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-        name: string;
-        lat: number;
-        lng: number;
-        address: string;
-        postcode: string;
-        huisnummer: string;
-    };
+    newScreenData: NewScreenData;
     editPostcode: string;
     editHuisnummer: string;
     newScreenLocationMode: LocationMode;
     editLocationMode: LocationMode;
-    onNewScreenChange: (field: string, value: string | number) => void;
+    onNewScreenChange: (field: keyof NewScreenData, value: string | number) => void;
     onInputChange: (field: keyof Screen, value: string | number) => void;
     onCreate: () => void;
     onCancelCreate: () => void;

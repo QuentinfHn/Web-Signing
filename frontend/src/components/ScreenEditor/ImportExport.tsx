@@ -9,7 +9,7 @@ interface ImportExportProps {
     conflictMode: ConflictMode;
     importResult: ImportResult | null;
     isImporting: boolean;
-    onToggle: () => void;
+    onToggle?: () => void;
     onSetConflictMode: (mode: ConflictMode) => void;
     onExport: () => Promise<void>;
     onImport: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
@@ -21,7 +21,6 @@ export function ImportExport({
     conflictMode,
     importResult,
     isImporting,
-    onToggle,
     onSetConflictMode,
     onExport,
     onImport,

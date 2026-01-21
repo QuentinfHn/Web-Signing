@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { trpcClient, Screen } from "../utils/trpc";
+import { Screen } from "../utils/trpc";
 import { ConflictMode, ImportResult } from "../types/screen";
 
 import { DisplayList } from "../components/ScreenEditor/DisplayList";
@@ -16,7 +16,6 @@ import { useScreenEditor } from "../hooks/useScreenEditor";
 import styles from "./ScreenEditor.module.css";
 import buttonStyles from "../components/Button.module.css";
 import modalStyles from "../components/Modal.module.css";
-import formStyles from "../components/Form.module.css";
 
 export default function ScreenEditor() {
     const { displays, createDisplay, deleteDisplay } = useDisplays();

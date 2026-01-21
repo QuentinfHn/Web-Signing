@@ -1,8 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { trpcClient, Screen } from "../utils/trpc";
 import { useWebSocket, ScreenState } from "../utils/websocket";
-import { signageCache } from "../lib/signageCache";
+import { signageCache, CachedScreen } from "../lib/signageCache";
 import { useAutoSync } from "../hooks/useSync";
 import styles from "./Display.module.css";
 
@@ -23,12 +22,11 @@ export default function Display() {
     const { displayId = "display1" } = useParams<{ displayId: string }>();
 
     // Initialize with empty state, will load from cache
-    const [screens, setScreens] = useState<Screen[]>([]);
+    const [screens, setScreens] = useState<CachedScreen[]>([]);
     const [screenStates, setScreenStates] = useState<ScreenState>({});
     const [previousSrcs, setPreviousSrcs] = useState<Record<string, string>>({});
     const [fadingScreens, setFadingScreens] = useState<Set<string>>(new Set());
     const [imageSizes, setImageSizes] = useState<Record<string, ImageSize>>({});
-    const [isInitialized, setIsInitialized] = useState(false);
 
     // Auto-sync every 60 seconds
     useAutoSync(displayId, 60000);
@@ -58,14 +56,9 @@ export default function Display() {
                     if (Object.keys(cachedStates).length > 0) {
                         setScreenStates(cachedStates);
                     }
-
-                    setIsInitialized(true);
                 }
             } catch (error) {
                 console.error('Failed to initialize display:', error);
-                if (mounted) {
-                    setIsInitialized(true);
-                }
             }
         };
 
@@ -215,7 +208,7 @@ export default function Display() {
         }));
     };
 
-    const shouldUseFill = (screen: Screen, screenId: string): boolean => {
+    const shouldUseFill = (screen: CachedScreen, screenId: string): boolean => {
         const imageSize = imageSizes[screenId];
         if (!imageSize) return false;
         return imageSize.width !== screen.width || imageSize.height !== screen.height;

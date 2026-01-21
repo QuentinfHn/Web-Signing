@@ -10,7 +10,7 @@ interface DisplayListProps {
     onCreateDisplay: () => void;
     onSetNewDisplayName: (name: string) => void;
     onSelectDisplay: (id: string) => void;
-    onDeleteDisplay: (id: string) => void;
+    onDeleteDisplay: (id: string, name: string) => void;
 }
 
 export function DisplayList({
@@ -36,7 +36,7 @@ export function DisplayList({
                         <span className={styles.displayCount}>{display._count?.screens || 0}</span>
                         <button
                             className={`${buttonStyles.btnIcon} ${buttonStyles.btnDelete}`}
-                            onClick={(e) => { e.stopPropagation(); onDeleteDisplay(display.id); }}
+                            onClick={(e) => { e.stopPropagation(); onDeleteDisplay(display.id, display.name || display.id); }}
                             title="Verwijderen"
                         >
                             x

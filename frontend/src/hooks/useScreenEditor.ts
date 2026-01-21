@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Screen } from "../utils/trpc";
 import { LocationMode } from "../types/screen";
 
