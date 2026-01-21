@@ -13,6 +13,11 @@ import { useScreens } from "../hooks/useScreens";
 import { useGeocode } from "../hooks/useGeocode";
 import { useScreenEditor } from "../hooks/useScreenEditor";
 
+import styles from "./ScreenEditor.module.css";
+import buttonStyles from "../components/Button.module.css";
+import modalStyles from "../components/Modal.module.css";
+import formStyles from "../components/Form.module.css";
+
 export default function ScreenEditor() {
     const { displays, createDisplay, deleteDisplay } = useDisplays();
     const { screens, updateScreen, deleteScreen, createScreen, exportScreens, importScreens } = useScreens();
@@ -186,17 +191,17 @@ export default function ScreenEditor() {
     const displayScreens = screens.filter(s => s.displayId === selectedDisplayId);
 
     return (
-        <div className="screen-editor compact">
+        <div className={`${styles.screenEditor} ${styles.compact}`}>
             <header>
                 <h1>Screen Editor</h1>
-                <div className="header-actions">
+                <div className={styles.headerActions}>
                     <button
-                        className={`toggle-btn ${showImportExport ? "active" : ""}`}
+                        className={`${styles.toggleBtn} ${showImportExport ? styles.active : ""}`}
                         onClick={() => setShowImportExport(!showImportExport)}
                     >
                         Import/Export
                     </button>
-                    <Link to="/" className="back-link">Terug</Link>
+                    <Link to="/" className={buttonStyles.backLink}>Terug</Link>
                 </div>
             </header>
 
@@ -212,7 +217,7 @@ export default function ScreenEditor() {
                 onClearImportResult={() => setImportResult(null)}
             />
 
-            <div className="editor-layout">
+            <div className={styles.editorLayout}>
                 <DisplayList
                     displays={displays}
                     selectedDisplayId={selectedDisplayId}
@@ -223,13 +228,13 @@ export default function ScreenEditor() {
                     onDeleteDisplay={showDeleteDisplayConfirm}
                 />
 
-                <section className="screens-panel">
+                <section className={styles.screensPanel}>
                     {selectedDisplayId ? (
                         <>
-                            <div className="panel-header">
+                            <div className={styles.panelHeader}>
                                 <h2>Schermen - {displays.find(d => d.id === selectedDisplayId)?.name || selectedDisplayId}</h2>
                                 <button
-                                    className={`btn-primary ${screenEditor.isCreating ? "btn-cancel" : ""}`}
+                                    className={`${buttonStyles.btnPrimary} ${screenEditor.isCreating ? buttonStyles.btnCancel : ""}`}
                                     onClick={() => {
                                         if (screenEditor.isCreating) {
                                             screenEditor.cancelCreate();
@@ -271,7 +276,7 @@ export default function ScreenEditor() {
                                 onScreenClick={handleEdit}
                             />
 
-                            <table className="screen-table">
+                            <table className={styles.screenTable}>
                                 <thead>
                                     <tr>
                                         <th>Naam</th>
@@ -290,7 +295,7 @@ export default function ScreenEditor() {
                                         <tr
                                             key={screen.id}
                                             onClick={() => handleEdit(screen)}
-                                            className={screenEditor.editingId === screen.id ? "selected-row" : ""}
+                                            className={screenEditor.editingId === screen.id ? styles.selectedRow : ""}
                                         >
                                             <td>{screen.name || screen.id}</td>
                                             <td>{screen.x}</td>
@@ -300,16 +305,16 @@ export default function ScreenEditor() {
                                             <td>{screen.lat?.toFixed(5)}</td>
                                             <td>{screen.lng?.toFixed(5)}</td>
                                             <td>{screen.address}</td>
-                                            <td className="actions">
+                                            <td className={styles.actions}>
                                                 <button
-                                                    className="btn-icon btn-edit"
+                                                    className={`${buttonStyles.btnIcon} ${buttonStyles.btnEdit}`}
                                                     onClick={(e) => { e.stopPropagation(); handleEdit(screen); }}
                                                     title="Bewerken"
                                                 >
                                                     ✏️
                                                 </button>
                                                 <button
-                                                    className="btn-icon btn-delete"
+                                                    className={`${buttonStyles.btnIcon} ${buttonStyles.btnDelete}`}
                                                     onClick={(e) => { e.stopPropagation(); showDeleteScreenConfirm(screen.id, screen.name || screen.id); }}
                                                     title="Verwijderen"
                                                 >
@@ -322,39 +327,39 @@ export default function ScreenEditor() {
                             </table>
 
                             {displayScreens.length === 0 && (
-                                <p className="empty-message">Geen schermen. Voeg een scherm toe.</p>
+                                <p className={styles.emptyMessage}>Geen schermen. Voeg een scherm toe.</p>
                             )}
                         </>
                     ) : (
-                        <p className="empty-message">Selecteer of maak een display om schermen te beheren.</p>
+                        <p className={styles.emptyMessage}>Selecteer of maak een display om schermen te beheren.</p>
                     )}
                 </section>
             </div>
 
             {
                 deleteConfirm?.show && (
-                    <div className="confirm-overlay" onClick={() => setDeleteConfirm(null)}>
-                        <div className="confirm-dialog" onClick={(e) => e.stopPropagation()}>
-                            <div className="confirm-icon">⚠️</div>
+                    <div className={modalStyles.confirmOverlay} onClick={() => setDeleteConfirm(null)}>
+                        <div className={modalStyles.confirmDialog} onClick={(e) => e.stopPropagation()}>
+                            <div className={modalStyles.confirmIcon}>⚠️</div>
                             <h3>Verwijderen bevestigen</h3>
                             <p>
                                 Weet je zeker dat je {deleteConfirm.type === "display" ? "display" : "scherm"}{" "}
                                 <strong>"{deleteConfirm.name}"</strong> wilt verwijderen?
                             </p>
                             {deleteConfirm.type === "display" && (
-                                <p className="confirm-warning">
+                                <p className={modalStyles.confirmWarning}>
                                     ⚠️ Alle schermen in deze display worden ook verwijderd!
                                 </p>
                             )}
-                            <div className="confirm-buttons">
+                            <div className={modalStyles.confirmButtons}>
                                 <button
-                                    className="btn-secondary"
+                                    className={buttonStyles.btnSecondary}
                                     onClick={() => setDeleteConfirm(null)}
                                 >
                                     Annuleren
                                 </button>
                                 <button
-                                    className="btn-danger"
+                                    className={buttonStyles.btnDanger}
                                     onClick={handleConfirmDelete}
                                 >
                                     Verwijderen

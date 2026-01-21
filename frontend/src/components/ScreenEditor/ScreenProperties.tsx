@@ -1,6 +1,9 @@
 import { Screen } from "../../utils/trpc";
 import { LocationMode } from "../../types/screen";
 import { GeocodeResult } from "../../hooks/useGeocode";
+import styles from "../../pages/ScreenEditor.module.css";
+import buttonStyles from "../Button.module.css";
+import formStyles from "../Form.module.css";
 
 interface ScreenPropertiesProps {
     isCreating: boolean;
@@ -86,13 +89,13 @@ export function ScreenProperties({
     return (
         <>
             {isCreating && (
-                <div className="edit-modal">
-                    <div className="edit-modal-header">
+                <div className={styles.editModal}>
+                    <div className={styles.editModalHeader}>
                         <span>📺 Nieuw Scherm Toevoegen</span>
                     </div>
 
-                    <div className="edit-modal-body">
-                        <div className="edit-modal-row">
+                    <div className={styles.editModalBody}>
+                        <div className={styles.editModalRow}>
                             <label>Naam:</label>
                             <input
                                 type="text"
@@ -102,7 +105,7 @@ export function ScreenProperties({
                             />
                         </div>
 
-                        <div className="edit-modal-row">
+                        <div className={styles.editModalRow}>
                             <label>X:</label>
                             <input
                                 type="number"
@@ -129,10 +132,10 @@ export function ScreenProperties({
                             />
                         </div>
 
-                        <div className="edit-modal-row">
+                        <div className={styles.editModalRow}>
                             <label>Locatie:</label>
-                            <div className="location-mode-toggle">
-                                <label className={`toggle-option ${newScreenLocationMode === "address" ? "active" : ""}`}>
+                            <div className={styles.locationModeToggle}>
+                                <label className={`${styles.toggleOption} ${newScreenLocationMode === "address" ? styles.active : ""}`}>
                                     <input
                                         type="radio"
                                         name="newLocationMode"
@@ -142,7 +145,7 @@ export function ScreenProperties({
                                     />
                                     Adres
                                 </label>
-                                <label className={`toggle-option ${newScreenLocationMode === "coordinates" ? "active" : ""}`}>
+                                <label className={`${styles.toggleOption} ${newScreenLocationMode === "coordinates" ? styles.active : ""}`}>
                                     <input
                                         type="radio"
                                         name="newLocationMode"
@@ -156,7 +159,7 @@ export function ScreenProperties({
                         </div>
 
                         {newScreenLocationMode === "address" ? (
-                            <div className="edit-modal-row">
+                            <div className={styles.editModalRow}>
                                 <label></label>
                                 <input
                                     type="text"
@@ -164,29 +167,29 @@ export function ScreenProperties({
                                     value={newScreenData.postcode}
                                     onChange={e => onNewScreenChange("postcode", e.target.value.toUpperCase())}
                                     maxLength={7}
-                                    className="input-postcode"
+                                    className={styles.inputPostcode}
                                 />
                                 <input
                                     type="text"
                                     placeholder="Nr"
                                     value={newScreenData.huisnummer}
                                     onChange={e => onNewScreenChange("huisnummer", e.target.value)}
-                                    className="input-huisnummer"
+                                    className={styles.inputHuisnummer}
                                 />
                                 <button
                                     type="button"
-                                    className="btn-geocode-small"
+                                    className={buttonStyles.btnGeocodeSmall}
                                     onClick={handleGeocodeNew}
                                     disabled={!newScreenData.postcode || !newScreenData.huisnummer}
                                 >
                                     📍 Zoek
                                 </button>
                                 {newScreenData.address && (
-                                    <span className="address-found">✓ {newScreenData.address}</span>
+                                    <span className={styles.addressFound}>✓ {newScreenData.address}</span>
                                 )}
                             </div>
                         ) : (
-                            <div className="edit-modal-row">
+                            <div className={styles.editModalRow}>
                                 <label></label>
                                 <label>Lat:</label>
                                 <input
@@ -195,7 +198,7 @@ export function ScreenProperties({
                                     value={newScreenData.lat || ""}
                                     onChange={e => onNewScreenChange("lat", parseFloat(e.target.value) || 0)}
                                     step="0.00001"
-                                    className="input-coordinate"
+                                    className={styles.inputCoordinate}
                                 />
                                 <label>Lng:</label>
                                 <input
@@ -204,25 +207,25 @@ export function ScreenProperties({
                                     value={newScreenData.lng || ""}
                                     onChange={e => onNewScreenChange("lng", parseFloat(e.target.value) || 0)}
                                     step="0.00001"
-                                    className="input-coordinate"
+                                    className={styles.inputCoordinate}
                                 />
                             </div>
                         )}
                     </div>
 
-                    <div className="edit-modal-footer">
+                    <div className={styles.editModalFooter}>
                         <div></div>
-                        <div className="edit-modal-footer-right">
+                        <div className={styles.editModalFooterRight}>
                             <button
                                 type="button"
-                                className="btn-secondary"
+                                className={buttonStyles.btnSecondary}
                                 onClick={onCancelCreate}
                             >
                                 Annuleren
                             </button>
                             <button
                                 type="button"
-                                className="btn-primary"
+                                className={buttonStyles.btnPrimary}
                                 onClick={onCreate}
                             >
                                 ✓ Scherm Toevoegen
@@ -233,14 +236,14 @@ export function ScreenProperties({
             )}
 
             {editingId && (
-                <div className="edit-modal">
-                    <div className="edit-modal-header">
+                <div className={styles.editModal}>
+                    <div className={styles.editModalHeader}>
                         <span>✏️ Scherm Bewerken</span>
-                        <span className="edit-modal-id">ID: {editingId}</span>
+                        <span className={styles.editModalId}>ID: {editingId}</span>
                     </div>
 
-                    <div className="edit-modal-body">
-                        <div className="edit-modal-row">
+                    <div className={styles.editModalBody}>
+                        <div className={styles.editModalRow}>
                             <label>Naam:</label>
                             <input
                                 type="text"
@@ -250,7 +253,7 @@ export function ScreenProperties({
                             />
                         </div>
 
-                        <div className="edit-modal-row">
+                        <div className={styles.editModalRow}>
                             <label>X:</label>
                             <input
                                 type="number"
@@ -277,10 +280,10 @@ export function ScreenProperties({
                             />
                         </div>
 
-                        <div className="edit-modal-row">
+                        <div className={styles.editModalRow}>
                             <label>Locatie:</label>
-                            <div className="location-mode-toggle">
-                                <label className={`toggle-option ${editLocationMode === "address" ? "active" : ""}`}>
+                            <div className={styles.locationModeToggle}>
+                                <label className={`${styles.toggleOption} ${editLocationMode === "address" ? styles.active : ""}`}>
                                     <input
                                         type="radio"
                                         name="editLocationMode"
@@ -290,7 +293,7 @@ export function ScreenProperties({
                                     />
                                     Adres
                                 </label>
-                                <label className={`toggle-option ${editLocationMode === "coordinates" ? "active" : ""}`}>
+                                <label className={`${styles.toggleOption} ${editLocationMode === "coordinates" ? styles.active : ""}`}>
                                     <input
                                         type="radio"
                                         name="editLocationMode"
@@ -304,7 +307,7 @@ export function ScreenProperties({
                         </div>
 
                         {editLocationMode === "address" ? (
-                            <div className="edit-modal-row">
+                            <div className={styles.editModalRow}>
                                 <label></label>
                                 <input
                                     type="text"
@@ -312,29 +315,29 @@ export function ScreenProperties({
                                     value={editPostcode}
                                     onChange={e => onSetEditPostcode(e.target.value.toUpperCase())}
                                     maxLength={7}
-                                    className="input-postcode"
+                                    className={styles.inputPostcode}
                                 />
                                 <input
                                     type="text"
                                     placeholder="Nr"
                                     value={editHuisnummer}
                                     onChange={e => onSetEditHuisnummer(e.target.value)}
-                                    className="input-huisnummer"
+                                    className={styles.inputHuisnummer}
                                 />
                                 <button
                                     type="button"
-                                    className="btn-geocode-small"
+                                    className={buttonStyles.btnGeocodeSmall}
                                     onClick={handleGeocodeEdit}
                                     disabled={!editPostcode || !editHuisnummer}
                                 >
                                     📍 Zoek
                                 </button>
                                 {formData.address && (
-                                    <span className="address-found">✓ {formData.address}</span>
+                                    <span className={styles.addressFound}>✓ {formData.address}</span>
                                 )}
                             </div>
                         ) : (
-                            <div className="edit-modal-row">
+                            <div className={styles.editModalRow}>
                                 <label></label>
                                 <label>Lat:</label>
                                 <input
@@ -343,7 +346,7 @@ export function ScreenProperties({
                                     value={formData.lat || ""}
                                     onChange={e => onInputChange("lat", parseFloat(e.target.value) || 0)}
                                     step="0.00001"
-                                    className="input-coordinate"
+                                    className={styles.inputCoordinate}
                                 />
                                 <label>Lng:</label>
                                 <input
@@ -352,31 +355,31 @@ export function ScreenProperties({
                                     value={formData.lng || ""}
                                     onChange={e => onInputChange("lng", parseFloat(e.target.value) || 0)}
                                     step="0.00001"
-                                    className="input-coordinate"
+                                    className={styles.inputCoordinate}
                                 />
                             </div>
                         )}
                     </div>
 
-                    <div className="edit-modal-footer">
+                    <div className={styles.editModalFooter}>
                         <button
                             type="button"
-                            className="btn-danger"
+                            className={buttonStyles.btnDanger}
                             onClick={() => onShowDeleteConfirm(editingId, formData.name || editingId)}
                         >
                             🗑️ Verwijderen
                         </button>
-                        <div className="edit-modal-footer-right">
+                        <div className={styles.editModalFooterRight}>
                             <button
                                 type="button"
-                                className="btn-secondary"
+                                className={buttonStyles.btnSecondary}
                                 onClick={onCancelEdit}
                             >
                                 Annuleren
                             </button>
                             <button
                                 type="button"
-                                className="btn-primary"
+                                className={buttonStyles.btnPrimary}
                                 onClick={onSave}
                             >
                                 ✓ Opslaan

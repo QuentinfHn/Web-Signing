@@ -1,0 +1,95 @@
+/* Login Modal & Auth Styles */
+
+.loginOverlay {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, var(--bg-dark) 0%, #0f0f23 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.loginModal {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    animation: scaleIn 0.2s ease-out;
+}
+
+.loginHeader {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.loginHeader h2 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, var(--accent), #8b5cf6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.loginHeader p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.loginForm {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.loginForm .formGroup {
+    margin-bottom: 0;
+}
+
+.loginError {
+    padding: 0.75rem 1rem;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    color: #f87171;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.loginFooter {
+    margin-top: 1.5rem;
+    text-align: center;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+}
+
+.loginFooter .backLink {
+    font-size: 0.9rem;
+}
+
+.loginFooterBackLink {
+    font-size: 0.9rem;
+}
+
+/* Auth Loading */
+.authLoading {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, var(--bg-dark) 0%, #0f0f23 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.authLoadingSpinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}

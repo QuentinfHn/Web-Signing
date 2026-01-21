@@ -1,4 +1,7 @@
 import { Display } from "../../utils/trpc";
+import styles from "../../pages/ScreenEditor.module.css";
+import buttonStyles from "../Button.module.css";
+import formStyles from "../Form.module.css";
 
 interface DisplayListProps {
     displays: Display[];
@@ -20,19 +23,19 @@ export function DisplayList({
     onDeleteDisplay,
 }: DisplayListProps) {
     return (
-        <section className="displays-panel">
+        <section className={styles.displaysPanel}>
             <h2>Displays</h2>
-            <div className="display-list">
+            <div className={styles.displayList}>
                 {displays.map(display => (
                     <div
                         key={display.id}
-                        className={`display-item ${selectedDisplayId === display.id ? "selected" : ""}`}
+                        className={`${styles.displayItem} ${selectedDisplayId === display.id ? styles.selected : ""}`}
                         onClick={() => onSelectDisplay(display.id)}
                     >
-                        <span className="display-name">{display.name || display.id}</span>
-                        <span className="display-count">{display._count?.screens || 0}</span>
+                        <span className={styles.displayName}>{display.name || display.id}</span>
+                        <span className={styles.displayCount}>{display._count?.screens || 0}</span>
                         <button
-                            className="btn-icon btn-delete"
+                            className={`${buttonStyles.btnIcon} ${buttonStyles.btnDelete}`}
                             onClick={(e) => { e.stopPropagation(); onDeleteDisplay(display.id); }}
                             title="Verwijderen"
                         >
@@ -41,16 +44,16 @@ export function DisplayList({
                     </div>
                 ))}
             </div>
-            <div className="add-display-form">
+            <div className={styles.addDisplayForm}>
                 <input
                     type="text"
                     placeholder="Nieuwe display naam..."
                     value={newDisplayName}
                     onChange={(e) => onSetNewDisplayName(e.target.value)}
-                    className="input-small"
+                    className={formStyles.inputSmall}
                     onKeyDown={(e) => e.key === "Enter" && onCreateDisplay()}
                 />
-                <button className="btn-primary btn-small" onClick={onCreateDisplay}>+</button>
+                <button className={`${buttonStyles.btnPrimary} ${buttonStyles.btnSmall}`} onClick={onCreateDisplay}>+</button>
             </div>
         </section>
     );

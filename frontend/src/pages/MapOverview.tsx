@@ -4,6 +4,8 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import { trpcClient, Screen } from "../utils/trpc";
 import { useWebSocket, ScreenState } from "../utils/websocket";
 import "leaflet/dist/leaflet.css";
+import styles from "./MapOverview.module.css";
+import buttonStyles from "../components/Button.module.css";
 
 // Fix Leaflet marker icon issue
 import L from "leaflet";
@@ -40,7 +42,6 @@ function MapController({ selectedScreenId, screens }: { selectedScreenId: string
 export default function MapOverview() {
     const [screens, setScreens] = useState<Screen[]>([]);
     const [screenStates, setScreenStates] = useState<ScreenState>({});
-    const [scenarios, setScenarios] = useState<Record<string, Record<string, string>>>({});
     const [selectedScreenId, setSelectedScreenId] = useState<string | null>(null);
     const markerRefs = useRef<Record<string, L.Marker | null>>({});
 
@@ -53,7 +54,6 @@ export default function MapOverview() {
 
     useEffect(() => {
         trpcClient.screens.list.query().then(setScreens).catch(console.error);
-        trpcClient.scenarios.getAll.query().then(setScenarios).catch(console.error);
     }, []);
 
     // Filter screens with valid coordinates
@@ -76,19 +76,19 @@ export default function MapOverview() {
     };
 
     return (
-        <div className="map-page">
+        <div className={styles.mapPage}>
             <header>
                 <h1>Live Map Overview</h1>
-                <div className="header-actions">
-                    <span className={`connection-status ${connected ? "connected" : "disconnected"}`}>
+                <div className={styles.headerActions}>
+                    <span className={`${styles.connectionStatus} ${connected ? styles.connected : styles.disconnected}`}>
                         {connected ? "Verbonden" : "Niet verbonden"}
                     </span>
-                    <Link to="/" className="back-link">Terug</Link>
+                    <Link to="/" className={buttonStyles.backLink}>Terug</Link>
                 </div>
             </header>
 
-            <div className="map-layout">
-                <div className="map-container">
+            <div className={styles.mapLayout}>
+                <div className={styles.mapContainer}>
                     <MapContainer center={center} zoom={13} style={{ height: "100%", width: "100%" }}>
                         <TileLayer
                             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -119,9 +119,9 @@ export default function MapOverview() {
                     </MapContainer>
                 </div>
 
-                <aside className="map-sidebar">
+                <aside className={styles.mapSidebar}>
                     <h2>Actieve Schermen</h2>
-                    <div className="screen-list">
+                    <div className={styles.screenList}>
                         {locatedScreens.map(screen => {
                             const isLive = !!screenStates[screen.id]?.scenario;
                             const statusLabel = getScenarioName(screen.id);
@@ -129,22 +129,22 @@ export default function MapOverview() {
                             return (
                                 <div
                                     key={screen.id}
-                                    className={`sidebar-screen-item ${selectedScreenId === screen.id ? "selected" : ""}`}
+                                    className={`${styles.sidebarScreenItem} ${selectedScreenId === screen.id ? styles.selected : ""}`}
                                     onClick={() => handleSidebarClick(screen.id)}
                                 >
-                                    <div className="screen-info">
+                                    <div className={styles.screenInfo}>
                                         <h3>{screen.name || screen.id}</h3>
-                                        <span className={`status-badge ${isLive ? "live" : "off"}`}>
+                                        <span className={`${styles.statusBadge} ${isLive ? styles.live : styles.off}`}>
                                             {isLive ? statusLabel : "Uit"}
                                         </span>
                                     </div>
-                                    <div className="screen-meta">
+                                    <div className={styles.screenMeta}>
                                         <small>{screen.address || "Geen adres"}</small>
                                     </div>
                                 </div>
                             );
                         })}
-                        {locatedScreens.length === 0 && <p className="empty-message">Geen schermen op de kaart gevonden.</p>}
+                        {locatedScreens.length === 0 && <p className={styles.emptyMessage}>Geen schermen op de kaart gevonden.</p>}
                     </div>
                 </aside>
             </div>

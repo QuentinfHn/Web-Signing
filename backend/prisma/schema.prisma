@@ -59,13 +59,25 @@ model Content {
 }
 
 model ScenarioAssignment {
-  id        String @id @default(cuid())
-  screenId  String
-  scenario  String // References Scenario.name
-  imagePath String
+  id         String           @id @default(cuid())
+  screenId   String
+  scenario   String           // References Scenario.name
+  imagePath  String           // First image (backward compatible)
+  intervalMs Int?             // Null = single image mode, otherwise slideshow interval in ms
+  images     SlideshowImage[]
 
   @@unique([screenId, scenario])
   @@index([screenId])
+}
+
+model SlideshowImage {
+  id           String             @id @default(cuid())
+  assignmentId String
+  imagePath    String
+  order        Int
+  assignment   ScenarioAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+
+  @@index([assignmentId])
 }
 
 model Scenario {

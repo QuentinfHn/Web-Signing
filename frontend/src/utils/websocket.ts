@@ -1,10 +1,16 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 
+export interface SlideshowConfig {
+    images: string[];
+    intervalMs: number;
+}
+
 export interface ScreenState {
     [screenId: string]: {
         src: string | null;
         scenario: string | null;
         updated: Date | string;
+        slideshow?: SlideshowConfig;
     };
 }
 
