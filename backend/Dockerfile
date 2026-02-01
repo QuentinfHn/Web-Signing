@@ -4,9 +4,9 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Install dependencies
-COPY package.json ./
+COPY package*.json ./
 RUN --mount=type=cache,target=/root/.npm \
-    npm install
+    npm ci
 
 # Copy source and generate Prisma client
 COPY prisma ./prisma
