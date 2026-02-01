@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Display {
+  id      String   @id
+  name    String?
+  screens Screen[]
+}
+
+model Screen {
+  id        String   @id
+  displayId String
+  x         Int
+  y         Int
+  width     Int
+  height    Int
+  name      String?
+  lat       Float?
+  lng       Float?
+  address   String?
+  display   Display  @relation(fields: [displayId], references: [id])
+
+  @@index([displayId])
+}
+
+model Preset {
+  id        String   @id @default(cuid())
+  name      String
+  scenarios String   // JSON string: { screenId: scenarioName }
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ScreenState {
+  screenId  String   @id
+  imageSrc  String?
+  scenario  String?
+  updatedAt DateTime @updatedAt
+}
+
+model Content {
+  id         String   @id @default(cuid())
+  filename   String
+  path       String   @unique
+  category   String
+  mimeType   String
+  size       Int
+  isFavorite Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([category])
+  @@index([isFavorite])
+}
+
+model ScenarioAssignment {
+  id         String           @id @default(cuid())
+  screenId   String
+  scenario   String           // References Scenario.name
+  imagePath  String           // First image (backward compatible)
+  intervalMs Int?             // Null = single image mode, otherwise slideshow interval in ms
+  images     SlideshowImage[]
+
+  @@unique([screenId, scenario])
+  @@index([screenId])
+}
+
+model SlideshowImage {
+  id           String             @id @default(cuid())
+  assignmentId String
+  imagePath    String
+  order        Int
+  assignment   ScenarioAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+
+  @@index([assignmentId])
+}
+
+model Scenario {
+  id           String @id @default(cuid())
+  name         String @unique
+  displayOrder Int    @default(0)
+}

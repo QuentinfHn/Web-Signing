@@ -1,0 +1,293 @@
+/* Control Page Styles */
+
+.controlPage {
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.connectionStatus {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.connectionStatus.connected {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--success);
+}
+
+.connectionStatus.disconnected {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+}
+
+.controlSection {
+    margin-bottom: 2rem;
+}
+
+.controlSection h2 {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.screensGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.screenCard {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem;
+    transition: all 0.2s ease;
+}
+
+.screenCard:hover {
+    border-color: var(--accent);
+}
+
+.screenCard h3 {
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+    color: var(--text-primary);
+}
+
+.radioGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.radioOption {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 6px;
+    transition: background 0.2s ease;
+}
+
+.radioOption:hover {
+    background: var(--bg-card-hover);
+}
+
+.radioOption input[type="radio"] {
+    accent-color: var(--accent);
+    width: 18px;
+    height: 18px;
+}
+
+.scenarioRow {
+    margin-bottom: 0.25rem;
+}
+
+.radioLabel {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    flex: 1;
+}
+
+.scenarioOff {
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.scenarioName {
+    flex: 1;
+}
+
+/* Clickable row styling */
+.clickableRow {
+    cursor: pointer;
+    user-select: none;
+}
+
+.clickableRow.selected {
+    background: rgba(59, 130, 246, 0.2);
+    border-left: 3px solid var(--accent);
+}
+
+.clickableRow.disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.clickableRow:not(.disabled):hover {
+    background: var(--bg-card-hover);
+}
+
+.presetsContainer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.presetButton {
+    padding: 0.75rem 1.5rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.presetButton:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    transform: translateY(-1px);
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+}
+
+.title {
+    font-size: 1.5rem;
+    background: linear-gradient(135deg, var(--accent), #8b5cf6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.headerActions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.settingsBtn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.4rem;
+    border-radius: 4px;
+    font-size: 1.1rem;
+    opacity: 0.5;
+    transition: all 0.2s ease;
+    margin-left: auto;
+}
+
+.radioOption:hover .settingsBtn,
+.settingsBtn:focus {
+    opacity: 1;
+}
+
+.settingsBtn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: rotate(45deg);
+}
+
+.assignedContentIndicator {
+    color: var(--success);
+    margin-left: 0.5rem;
+    font-weight: bold;
+}
+
+/* Preset Modal */
+.presetModal {
+    max-width: 600px;
+}
+
+.presetScreensGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 0.5rem 0;
+}
+
+.presetDisplayGroup {
+    margin-bottom: 1rem;
+}
+
+.presetDisplayGroup:last-child {
+    margin-bottom: 0;
+}
+
+.presetDisplayHeader {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--accent);
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.5rem;
+    background: rgba(59, 130, 246, 0.1);
+    border-radius: 6px;
+    border-left: 3px solid var(--accent);
+}
+
+.presetScreenRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.5rem;
+    background: var(--bg-dark);
+    border-radius: 6px;
+}
+
+.presetScreenName {
+    flex: 1;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.presetItem {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.presetActions {
+    display: flex;
+    gap: 0.25rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.presetItem:hover .presetActions {
+    opacity: 1;
+}
+
+.sectionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.sectionHeader h2 {
+    margin: 0;
+    border: none;
+    padding: 0;
+}
+
+.emptyMessageInline {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-style: italic;
+}

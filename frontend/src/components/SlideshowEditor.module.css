@@ -1,0 +1,146 @@
+/* Slideshow Editor Styles */
+
+.slideshowEditor {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.slideshowImagesList {
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.slideshowEmpty {
+    padding: 2rem;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.slideshowImageItem {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s ease;
+}
+
+.slideshowImageItem:last-child {
+    border-bottom: none;
+}
+
+.slideshowImageItem:hover {
+    background: var(--bg-card-hover);
+}
+
+.slideshowOrder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: var(--accent);
+    color: white;
+    border-radius: 50%;
+    font-size: 0.75rem;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.slideshowFilename {
+    flex: 1;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.slideshowItemActions {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.slideshowItemActions .btnIcon {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.9rem;
+}
+
+.slideshowItemActions .btnIcon:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.slideshowActions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.slideshowActions .btnClear {
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.4);
+}
+
+.slideshowActions .btnClear:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.6);
+}
+
+.slideshowInterval {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 8px;
+}
+
+.slideshowInterval label {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.slideshowAddModal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2100;
+    backdrop-filter: blur(4px);
+}
+
+.slideshowAddContent {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    width: 90%;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+}
+
+.slideshowAddContent h4 {
+    margin: 0 0 1rem 0;
+    font-size: 1.1rem;
+    color: var(--text-primary);
+}
+
+.slideshowAddContent .btnSecondary {
+    margin-top: 1rem;
+    width: 100%;
+}

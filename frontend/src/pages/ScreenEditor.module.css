@@ -1,0 +1,646 @@
+/* Screen Editor Page Styles */
+
+.screenEditor {
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.screenEditor.compact {
+    padding: 1rem 1.5rem;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.screenEditor.compact .header {
+    margin-bottom: 1rem;
+}
+
+.title {
+    font-size: 2rem;
+    background: linear-gradient(135deg, var(--accent), #8b5cf6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.screenEditor.compact .title {
+    font-size: 1.5rem;
+}
+
+.headerActions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.toggleBtn {
+    padding: 0.4rem 0.8rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+.toggleBtn:hover,
+.toggleBtn.active {
+    background: var(--bg-card-hover);
+    border-color: var(--accent);
+    color: var(--text-primary);
+}
+
+/* Editor Layout - Two Columns */
+.editorLayout {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 1rem;
+    min-height: calc(100vh - 140px);
+}
+
+/* Displays Panel */
+.displaysPanel {
+    background: var(--bg-card);
+    border-radius: 8px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.displaysPanel h2 {
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.displayList {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 0.75rem;
+}
+
+.displayItem {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.6rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    margin-bottom: 0.25rem;
+}
+
+.displayItem:hover {
+    background: var(--bg-card-hover);
+}
+
+.displayItem.selected {
+    background: rgba(59, 130, 246, 0.2);
+    border-left: 3px solid var(--accent);
+}
+
+.displayName {
+    flex: 1;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.displayNameInput {
+    flex: 1;
+    min-width: 0;
+}
+
+.displayCount {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    background: var(--bg-dark);
+    padding: 0.15rem 0.4rem;
+    border-radius: 10px;
+}
+
+.displayActions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.addDisplayForm {
+    display: flex;
+    gap: 0.4rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border);
+}
+
+.addDisplayForm input {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Screens Panel */
+.screensPanel {
+    background: var(--bg-card);
+    border-radius: 8px;
+    padding: 1rem;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.panelHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.panelHeader h2 {
+    font-size: 1rem;
+    margin: 0;
+}
+
+/* Visualizer */
+.visualizerContainer {
+    margin-bottom: 0.75rem;
+    overflow-x: auto;
+}
+
+.visualizerCanvas {
+    position: relative;
+    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.screenEditor.compact .visualizerCanvas {
+    margin: 0;
+}
+
+.canvasLabel {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    opacity: 0.5;
+}
+
+.visualizerScreen {
+    position: absolute;
+    background: rgba(59, 130, 246, 0.3);
+    border: 2px solid var(--accent);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.visualizerScreen:hover {
+    background: rgba(59, 130, 246, 0.5);
+    transform: scale(1.02);
+    z-index: 10;
+}
+
+.visualizerScreen.editing {
+    border-color: var(--warning);
+    background: rgba(245, 158, 11, 0.3);
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.5);
+}
+
+.visualizerScreen .screenLabel {
+    font-size: 0.65rem;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+    text-align: center;
+    padding: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Screen Table */
+.screenTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.screenTable th,
+.screenTable td {
+    padding: 0.5rem 0.6rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+
+.screenTable th {
+    color: var(--text-secondary);
+    font-weight: 500;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+}
+
+.screenTable tbody tr {
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.screenTable tbody tr:hover {
+    background: var(--bg-card-hover);
+}
+
+.screenTable tbody tr.editingRow {
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.screenTable tbody tr.selectedRow {
+    background: rgba(59, 130, 246, 0.15);
+    border-left: 3px solid var(--accent);
+}
+
+.emptyMessage {
+    color: var(--text-secondary);
+    font-style: italic;
+    text-align: center;
+    padding: 2rem;
+}
+
+.screenTable input {
+    padding: 0.3rem 0.4rem;
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    width: 100%;
+}
+
+.screenTable input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.screenTable input:disabled {
+    opacity: 0.6;
+}
+
+.screenTable input[type="number"] {
+    width: 100px;
+}
+
+.screenTable .actions {
+    white-space: nowrap;
+    text-align: right;
+}
+
+/* Edit Modal */
+.editModal {
+    background: var(--bg-card);
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    width: 100%;
+}
+
+.editModalHeader {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.editModalId {
+    font-size: 0.75rem;
+    font-weight: normal;
+    color: var(--text-secondary);
+    background: var(--bg-dark);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+
+.editModalBody {
+    padding: 1rem;
+}
+
+.editModalRow {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.editModalRow:last-child {
+    margin-bottom: 0;
+}
+
+.editModalRow label {
+    font-weight: 500;
+    color: var(--text-secondary);
+    min-width: fit-content;
+    font-size: 0.9rem;
+}
+
+.editModalRow input {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg-dark);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+.editModalRow input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.editModalRow input[type="text"]:first-of-type {
+    flex: 1;
+    min-width: 200px;
+}
+
+.editModalRow input[type="number"] {
+    width: 80px;
+}
+
+.editModalRow input[type="number"].inputCoordinate {
+    width: 180px;
+}
+
+.editModalRow .inputPostcode {
+    width: 90px;
+    text-transform: uppercase;
+    flex: none;
+}
+
+.editModalRow .inputHuisnummer {
+    width: 60px;
+    flex: none;
+}
+
+.editModalRow .inputCoordinate {
+    width: 180px;
+    min-width: 180px;
+    flex: none;
+}
+
+.editModalFooter {
+    padding: 1rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.editModalFooterRight {
+    display: flex;
+    gap: 0.75rem;
+}
+
+/* Create Modal */
+.screenCreateModal {
+    background: linear-gradient(180deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%);
+    border: 1px solid var(--accent);
+    border-radius: 16px;
+    margin-bottom: 1rem;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(59, 130, 246, 0.15), 0 0 0 1px rgba(59, 130, 246, 0.1);
+    width: 100%;
+}
+
+.screenCreateModal .modalHeader {
+    padding: 1rem 1.25rem;
+    background: linear-gradient(90deg, rgba(59, 130, 246, 0.15) 0%, transparent 100%);
+    border-bottom: 1px solid var(--border);
+}
+
+.screenCreateModal .modalHeader h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.screenCreateModal .modalContent {
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.screenCreateModal .formRowThreeColumns {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    width: 100%;
+}
+
+.screenCreateModal .formSection {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    padding: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.screenCreateModal .formSection h4 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+    padding: 0;
+    color: var(--accent);
+    position: relative;
+}
+
+.screenCreateModal .sectionHelp {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin: 0 0 0.75rem 0;
+}
+
+.screenCreateModal .formGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.screenCreateModal .formGroup label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.screenCreateModal .formGroup input {
+    padding: 0.6rem 0.75rem;
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.screenCreateModal .formGroup input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.screenCreateModal .formGrid2x2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+/* Location Mode Toggle */
+.locationModeToggle {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.toggleOption {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+.toggleOption:hover {
+    border-color: var(--accent);
+    color: var(--text-primary);
+}
+
+.toggleOption.active {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: var(--accent);
+    color: var(--text-primary);
+}
+
+.toggleOption input[type="radio"] {
+    accent-color: var(--accent);
+    margin: 0;
+}
+
+/* Address Found */
+.addressFound {
+    color: var(--success);
+    font-size: 0.85rem;
+    padding: 0.5rem 0.75rem;
+    background: rgba(16, 185, 129, 0.1);
+    border-radius: 6px;
+    flex: 1;
+    min-width: 150px;
+}
+
+/* Compact Section */
+.compactSection {
+    background: var(--bg-card);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+}
+
+/* Import/Export Row */
+.importExportRow {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.importGroup {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.fileInput {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    overflow: hidden;
+}
+
+.importResultCompact {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    flex-wrap: wrap;
+}
+
+.importResultCompact .error {
+    color: #ef4444;
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+    .editorLayout {
+        grid-template-columns: 1fr;
+    }
+
+    .displaysPanel {
+        max-height: 200px;
+    }
+
+    .displayList {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .displayItem {
+        margin-bottom: 0;
+    }
+    .editorLayout {
+        grid-template-columns: 1fr;
+    }
+
+    .displaysPanel {
+        max-height: 200px;
+    }
+
+    .displayList {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .displayItem {
+        margin-bottom: 0;
+    }
+}

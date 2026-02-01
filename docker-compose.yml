@@ -1,0 +1,56 @@
+services:
+  backend:
+    image: ghcr.io/quentinfhn/signing/backend:latest
+    build: ./backend
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    volumes:
+      - ./content:/app/content
+      - led-data:/app/data
+    environment:
+      - DATABASE_URL=file:/app/data/led.db
+      - NODE_ENV=production
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
+      - JWT_SECRET=${JWT_SECRET:-}
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "wget", "-q", "--spider", "http://localhost:8080/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    image: ghcr.io/quentinfhn/signing/frontend:latest
+    build: ./frontend
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    depends_on:
+      - backend
+    environment:
+      - BACKEND_URL=http://backend:8080
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "wget", "-q", "--spider", "http://localhost:80" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Cloudflare Tunnel (optional - only starts if TUNNEL_TOKEN is set)
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN:-}
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_started
+    profiles:
+      - tunnel
+
+volumes:
+  led-data:
