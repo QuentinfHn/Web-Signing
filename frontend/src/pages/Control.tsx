@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { trpcClient, Preset, Content, Screen, Scenario, Display } from "../utils/trpc";
-import { useWebSocket, ScreenState } from "../utils/websocket";
+import { useWebSocket, ScreenState, VnnoxStatusData } from "../utils/websocket";
 import { sortScreensByName } from "../utils/sorting";
 import AdvancedContentSelector from "../components/AdvancedContentSelector";
 import styles from "./Control.module.css";
@@ -9,6 +9,7 @@ import buttonStyles from "../components/Button.module.css";
 import formStyles from "../components/Form.module.css";
 import modalStyles from "../components/Modal.module.css";
 import slideshowStyles from "../components/SlideshowEditor.module.css";
+
 
 // Scenarios are now fetched from DB
 
@@ -378,6 +379,8 @@ export default function Control() {
     const [screens, setScreens] = useState<Screen[]>([]);
     const [scenarios, setScenarios] = useState<string[]>([]);
     const [displays, setDisplays] = useState<Display[]>([]);
+    const [vnnoxStatuses, setVnnoxStatuses] = useState<VnnoxStatusData>({});
+    const [vnnoxEnabled, setVnnoxEnabled] = useState(false);
 
     // State for scene settings modal
     const [editingState, setEditingState] = useState<{
@@ -396,7 +399,11 @@ export default function Control() {
         setScreenStates(state);
     }, []);
 
-    const { connected, setImage } = useWebSocket(handleStateUpdate);
+    const handleVnnoxUpdate = useCallback((statuses: VnnoxStatusData) => {
+        setVnnoxStatuses(prev => ({ ...prev, ...statuses }));
+    }, []);
+
+    const { connected, setImage } = useWebSocket(handleStateUpdate, handleVnnoxUpdate);
 
     // Fetch data on mount
     useEffect(() => {
@@ -405,6 +412,25 @@ export default function Control() {
         trpcClient.content.list.query({}).then(setContentLibrary).catch(console.error);
         trpcClient.screens.list.query().then(setScreens).catch(console.error);
         trpcClient.displays.list.query().then(setDisplays).catch(console.error);
+
+        // Fetch VNNOX status
+        trpcClient.vnnox.isEnabled.query().then(r => {
+            setVnnoxEnabled(r.enabled);
+            if (r.enabled) {
+                trpcClient.vnnox.getStatuses.query().then(statuses => {
+                    const mapped: VnnoxStatusData = {};
+                    for (const [screenId, s] of Object.entries(statuses)) {
+                        mapped[screenId] = {
+                            playerId: s.playerId,
+                            playerName: s.playerName,
+                            onlineStatus: s.onlineStatus,
+                            lastSeen: s.lastSeen?.toString() || null,
+                        };
+                    }
+                    setVnnoxStatuses(mapped);
+                }).catch(console.error);
+            }
+        }).catch(console.error);
 
         // Fetch persistent scenario names from DB
         trpcClient.scenarioNames.list.query().then(scenarioList => {
@@ -588,70 +614,96 @@ export default function Control() {
                 <section key={displayId} className={styles.controlSection}>
                     <h2>📺 {getDisplayName(displayId)}</h2>
                     <div className={styles.screensGrid}>
-                        {displayScreens.map((screen) => (
-                            <div key={screen.id} className={styles.screenCard}>
-                                <h3>{screen.name || screen.id}</h3>
-                                <div className={styles.radioGroup}>
-                                    {/* Uit optie om scherm leeg te maken */}
-                                    <div className={styles.scenarioRow}>
-                                        <div className={styles.radioOption}>
-                                            <label className={styles.radioLabel}>
-                                                <input
-                                                    type="radio"
-                                                    name={screen.id}
-                                                    value=""
-                                                    checked={!screenStates[screen.id]?.scenario}
-                                                    onChange={() => handleRadioChange(screen.id, "")}
-                                                />
-                                                <span className={`${styles.scenarioName} ${styles.scenarioOff}`}>⭘ Uit</span>
-                                            </label>
-                                        </div>
-                                    </div>
-                                    {scenarios.map((scenario) => {
-                                        const scenarioData = getScenarioData(screen.id, scenario);
-                                        const imagePath = scenarioData?.imagePath;
-                                        const isSlideshow = scenarioData && scenarioData.images && scenarioData.images.length > 1;
-                                        const isSelected = screenStates[screen.id]?.scenario === scenario;
+                        {displayScreens.map((screen) => {
 
-                                        return (
-                                            <div key={scenario} className={styles.scenarioRow}>
-                                                <div
-                                                    className={`${styles.radioOption} ${styles.clickableRow} ${isSelected ? styles.selected : ''} ${!imagePath ? styles.disabled : ''}`}
-                                                    onClick={() => handleRowClick(screen.id, scenario, imagePath)}
-                                                >
+                            return (
+                                <div key={screen.id} className={styles.screenCard}>
+                                    <h3>{screen.name || screen.id}</h3>
+                                    {vnnoxEnabled && (
+                                        <div style={{
+                                            fontSize: '0.75rem',
+                                            color: 'var(--text-secondary, #a0a0b0)',
+                                            marginTop: '-0.3rem',
+                                            marginBottom: '0.5rem'
+                                        }}>
+                                            {vnnoxStatuses[screen.id] ? (
+                                                vnnoxStatuses[screen.id].onlineStatus === 1 ? (
+                                                    <span style={{ color: '#22c55e' }}>● Online</span>
+                                                ) : (
+                                                    <>
+                                                        <span style={{ color: '#ef4444' }}>● Offline</span>
+                                                        {vnnoxStatuses[screen.id].lastSeen && (
+                                                            <span> - Laatst: {new Date(vnnoxStatuses[screen.id].lastSeen!).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })} {new Date(vnnoxStatuses[screen.id].lastSeen!).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}</span>
+                                                        )}
+                                                    </>
+                                                )
+                                            ) : (
+                                                <span style={{ color: '#6b7280' }}>○ Niet gekoppeld</span>
+                                            )}
+                                        </div>
+                                    )}
+                                    <div className={styles.radioGroup}>
+                                        {/* Uit optie om scherm leeg te maken */}
+                                        <div className={styles.scenarioRow}>
+                                            <div className={styles.radioOption}>
+                                                <label className={styles.radioLabel}>
                                                     <input
                                                         type="radio"
                                                         name={screen.id}
-                                                        value={imagePath || ""}
-                                                        checked={isSelected}
-                                                        onChange={() => { }}
-                                                        disabled={!imagePath}
+                                                        value=""
+                                                        checked={!screenStates[screen.id]?.scenario}
+                                                        onChange={() => handleRadioChange(screen.id, "")}
                                                     />
-                                                    <span className={styles.scenarioName}>{scenario}</span>
-
-                                                    {imagePath && (
-                                                        <span className={styles.assignedContentIndicator} title={isSlideshow ? `Slideshow: ${scenarioData.images.length} afbeeldingen` : 'Enkele afbeelding'}>
-                                                            {isSlideshow ? `🎬 ${scenarioData.images.length}` : '✓'}
-                                                        </span>
-                                                    )}
-
-                                                    <button
-                                                        className={styles.settingsBtn}
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setEditingState({ screenId: screen.id, scenario });
-                                                        }}
-                                                        title="Instellingen"
-                                                    >
-                                                        ⚙️
-                                                    </button>
-                                                </div>
+                                                    <span className={`${styles.scenarioName} ${styles.scenarioOff}`}>⭘ Uit</span>
+                                                </label>
                                             </div>
-                                        );
-                                    })}
+                                        </div>
+                                        {scenarios.map((scenario) => {
+                                            const scenarioData = getScenarioData(screen.id, scenario);
+                                            const imagePath = scenarioData?.imagePath;
+                                            const isSlideshow = scenarioData && scenarioData.images && scenarioData.images.length > 1;
+                                            const isSelected = screenStates[screen.id]?.scenario === scenario;
+
+                                            return (
+                                                <div key={scenario} className={styles.scenarioRow}>
+                                                    <div
+                                                        className={`${styles.radioOption} ${styles.clickableRow} ${isSelected ? styles.selected : ''} ${!imagePath ? styles.disabled : ''}`}
+                                                        onClick={() => handleRowClick(screen.id, scenario, imagePath)}
+                                                    >
+                                                        <input
+                                                            type="radio"
+                                                            name={screen.id}
+                                                            value={imagePath || ""}
+                                                            checked={isSelected}
+                                                            onChange={() => { }}
+                                                            disabled={!imagePath}
+                                                        />
+                                                        <span className={styles.scenarioName}>{scenario}</span>
+
+                                                        {imagePath && (
+                                                            <span className={styles.assignedContentIndicator} title={isSlideshow ? `Slideshow: ${scenarioData.images.length} afbeeldingen` : 'Enkele afbeelding'}>
+                                                                {isSlideshow ? `🎬 ${scenarioData.images.length}` : '✓'}
+                                                            </span>
+                                                        )}
+
+                                                        <button
+                                                            className={styles.settingsBtn}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setEditingState({ screenId: screen.id, scenario });
+                                                            }}
+                                                            title="Instellingen"
+                                                        >
+                                                            ⚙️
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </section>
             ))}

@@ -1,0 +1,186 @@
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal {
+    background: var(--bg-secondary, #1e1e2e);
+    border-radius: 12px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.closeBtn {
+    background: none;
+    border: none;
+    color: var(--text-secondary, #a0a0b0);
+    font-size: 1.25rem;
+    cursor: pointer;
+    padding: 0.25rem;
+    line-height: 1;
+}
+
+.closeBtn:hover {
+    color: var(--text-primary, #fff);
+}
+
+.searchBar {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.searchBar input {
+    width: 100%;
+    padding: 0.6rem 1rem;
+    background: var(--bg-tertiary, #2a2a3e);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: var(--text-primary, #fff);
+    font-size: 0.9rem;
+}
+
+.searchBar input::placeholder {
+    color: var(--text-secondary, #a0a0b0);
+}
+
+.playerList {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.5rem 0;
+}
+
+.playerItem {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1.5rem;
+    gap: 0.75rem;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.playerItem:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.playerInfo {
+    flex: 1;
+    min-width: 0;
+}
+
+.playerName {
+    font-weight: 500;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.playerMeta {
+    font-size: 0.8rem;
+    color: var(--text-secondary, #a0a0b0);
+    margin-top: 0.15rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.linkBtn {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.8rem;
+    background: var(--accent, #6366f1);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.linkBtn:hover {
+    opacity: 0.85;
+}
+
+.vnnoxDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.online {
+    background-color: #22c55e;
+}
+
+.offline {
+    background-color: #ef4444;
+}
+
+.notLinked {
+    background-color: #6b7280;
+}
+
+.emptyMessage {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-secondary, #a0a0b0);
+}
+
+.loading {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-secondary, #a0a0b0);
+}
+
+.pagination {
+    padding: 0.75rem 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    color: var(--text-secondary, #a0a0b0);
+}
+
+.pagination button {
+    padding: 0.3rem 0.75rem;
+    font-size: 0.8rem;
+    background: var(--bg-tertiary, #2a2a3e);
+    color: var(--text-primary, #fff);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.pagination button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.error {
+    text-align: center;
+    padding: 1rem 1.5rem;
+    color: #ef4444;
+    font-size: 0.9rem;
+}

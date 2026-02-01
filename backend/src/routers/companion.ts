@@ -5,6 +5,7 @@ import { broadcastState } from "../services/screenState.js";
 import { invalidateStateCache } from "../services/cache.js";
 import { logger } from "../utils/logger.js";
 import { companionRateLimiter } from "../middleware/rateLimit.js";
+import { isVnnoxEnabled } from "../services/vnnox.js";
 
 const router = express.Router();
 router.use(companionRateLimiter);
@@ -437,6 +438,109 @@ router.post("/presets/trigger", requireCompanionAuth, async (req, res) => {
     } catch (error) {
         logger.error("Error triggering preset:", error);
         res.status(500).json({ error: "Failed to trigger preset" });
+    }
+});
+
+// Get VNNOX player status for all linked screens
+router.get("/vnnox/status", requireCompanionAuth, async (req, res) => {
+    try {
+        if (!isVnnoxEnabled()) {
+            res.json({ enabled: false, screens: [] });
+            return;
+        }
+
+        const screens = await prisma.screen.findMany({
+            where: { vnnoxPlayerId: { not: null } },
+            select: {
+                id: true,
+                name: true,
+                displayId: true,
+                vnnoxPlayerId: true,
+                vnnoxPlayerName: true,
+                vnnoxOnlineStatus: true,
+                vnnoxLastSeen: true,
+            },
+        });
+
+        res.json({
+            enabled: true,
+            screens: screens.map((s) => ({
+                screenId: s.id,
+                screenName: s.name,
+                displayId: s.displayId,
+                playerId: s.vnnoxPlayerId,
+                playerName: s.vnnoxPlayerName,
+                online: s.vnnoxOnlineStatus === 1,
+                lastSeen: s.vnnoxLastSeen?.toISOString() || null,
+            })),
+        });
+    } catch (error) {
+        logger.error("Error fetching VNNOX status:", error);
+        res.status(500).json({ error: "Failed to fetch VNNOX status" });
+    }
+});
+
+// Get VNNOX player status for a specific screen
+router.get("/vnnox/status/:screenId", requireCompanionAuth, async (req, res) => {
+    try {
+        if (!isVnnoxEnabled()) {
+            res.json({ enabled: false, screen: null });
+            return;
+        }
+
+        const screenId = Array.isArray(req.params.screenId) ? req.params.screenId[0] : req.params.screenId;
+
+        const screen = await prisma.screen.findUnique({
+            where: { id: screenId },
+            select: {
+                id: true,
+                name: true,
+                displayId: true,
+                vnnoxPlayerId: true,
+                vnnoxPlayerName: true,
+                vnnoxOnlineStatus: true,
+                vnnoxLastSeen: true,
+            },
+        });
+
+        if (!screen) {
+            res.status(404).json({ error: "Screen not found" });
+            return;
+        }
+
+        if (!screen.vnnoxPlayerId) {
+            res.json({
+                enabled: true,
+                screen: {
+                    screenId: screen.id,
+                    screenName: screen.name,
+                    displayId: screen.displayId,
+                    linked: false,
+                    playerId: null,
+                    playerName: null,
+                    online: null,
+                    lastSeen: null,
+                },
+            });
+            return;
+        }
+
+        res.json({
+            enabled: true,
+            screen: {
+                screenId: screen.id,
+                screenName: screen.name,
+                displayId: screen.displayId,
+                linked: true,
+                playerId: screen.vnnoxPlayerId,
+                playerName: screen.vnnoxPlayerName,
+                online: screen.vnnoxOnlineStatus === 1,
+                lastSeen: screen.vnnoxLastSeen?.toISOString() || null,
+            },
+        });
+    } catch (error) {
+        logger.error("Error fetching VNNOX screen status:", error);
+        res.status(500).json({ error: "Failed to fetch VNNOX screen status" });
     }
 });
 

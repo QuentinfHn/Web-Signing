@@ -20,6 +20,10 @@ describe('useScreens hook', () => {
       lat: 50.8514,
       lng: 5.6910,
       address: 'Test Address 1',
+      vnnoxPlayerId: null,
+      vnnoxPlayerName: null,
+      vnnoxOnlineStatus: null,
+      vnnoxLastSeen: null,
     },
     {
       id: 'screen-2',
@@ -32,6 +36,10 @@ describe('useScreens hook', () => {
       lat: 50.8524,
       lng: 5.6920,
       address: 'Test Address 2',
+      vnnoxPlayerId: null,
+      vnnoxPlayerName: null,
+      vnnoxOnlineStatus: null,
+      vnnoxLastSeen: null,
     },
   ]
 

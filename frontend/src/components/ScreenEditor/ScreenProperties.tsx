@@ -1,9 +1,13 @@
+import { useState } from "react";
 import { Screen } from "../../utils/trpc";
 import { LocationMode } from "../../types/screen";
 import { GeocodeResult } from "../../hooks/useGeocode";
 import { NewScreenData } from "../../hooks/useScreenEditor";
+import { VnnoxPlayerSelector } from "../VnnoxPlayerSelector";
+import { VnnoxPlayer } from "../../hooks/useVnnox";
 import styles from "../../pages/ScreenEditor.module.css";
 import buttonStyles from "../Button.module.css";
+import vnnoxStyles from "../VnnoxPlayerSelector.module.css";
 
 interface ScreenPropertiesProps {
     isCreating: boolean;
@@ -26,6 +30,16 @@ interface ScreenPropertiesProps {
     onSetNewScreenLocationMode: (mode: LocationMode) => void;
     onSetEditLocationMode: (mode: LocationMode) => void;
     onShowDeleteConfirm: (id: string, name: string) => void;
+    // VNNOX
+    vnnoxEnabled?: boolean;
+    vnnoxPlayerName?: string | null;
+    vnnoxOnlineStatus?: number | null;
+    onLinkPlayer?: (screenId: string, playerId: string, playerName: string) => Promise<void>;
+    onUnlinkPlayer?: (screenId: string) => Promise<void>;
+    searchPlayers?: (params?: { count?: number; start?: number; name?: string }) => Promise<{
+        total: number;
+        players: VnnoxPlayer[];
+    }>;
 }
 
 export function ScreenProperties({
@@ -49,7 +63,14 @@ export function ScreenProperties({
     onSetNewScreenLocationMode,
     onSetEditLocationMode,
     onShowDeleteConfirm,
+    vnnoxEnabled,
+    vnnoxPlayerName,
+    vnnoxOnlineStatus,
+    onLinkPlayer,
+    onUnlinkPlayer,
+    searchPlayers,
 }: ScreenPropertiesProps) {
+    const [showPlayerSelector, setShowPlayerSelector] = useState(false);
     const handleGeocodeNew = async () => {
         const result = await onGeocode(`${newScreenData.postcode} ${newScreenData.huisnummer}`);
         if (result) {
@@ -348,6 +369,56 @@ export function ScreenProperties({
                             </div>
                         )}
                     </div>
+
+                    {vnnoxEnabled && (
+                        <>
+                            <div className={styles.editModalRow}>
+                                <label>VNNOX:</label>
+                                {vnnoxPlayerName ? (
+                                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                                        <span
+                                            className={`${vnnoxStyles.vnnoxDot} ${vnnoxOnlineStatus === 1 ? vnnoxStyles.online : vnnoxStyles.offline}`}
+                                        />
+                                        <span>{vnnoxPlayerName}</span>
+                                        <button
+                                            type="button"
+                                            className={buttonStyles.btnSecondary}
+                                            style={{ marginLeft: "0.5rem", padding: "0.2rem 0.5rem", fontSize: "0.8rem" }}
+                                            onClick={async () => {
+                                                if (onUnlinkPlayer && editingId) {
+                                                    await onUnlinkPlayer(editingId);
+                                                }
+                                            }}
+                                        >
+                                            Ontkoppelen
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        className={buttonStyles.btnSecondary}
+                                        style={{ padding: "0.3rem 0.75rem", fontSize: "0.85rem" }}
+                                        onClick={() => setShowPlayerSelector(true)}
+                                    >
+                                        Koppel VNNOX Player
+                                    </button>
+                                )}
+                            </div>
+
+                            {showPlayerSelector && searchPlayers && editingId && (
+                                <VnnoxPlayerSelector
+                                    searchPlayers={searchPlayers}
+                                    onSelect={async (playerId, playerName) => {
+                                        if (onLinkPlayer && editingId) {
+                                            await onLinkPlayer(editingId, playerId, playerName);
+                                        }
+                                        setShowPlayerSelector(false);
+                                    }}
+                                    onClose={() => setShowPlayerSelector(false)}
+                                />
+                            )}
+                        </>
+                    )}
 
                     <div className={styles.editModalFooter}>
                         <button
