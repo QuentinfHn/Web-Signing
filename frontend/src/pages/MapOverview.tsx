@@ -143,7 +143,17 @@ export default function MapOverview() {
                                                     vnnoxStatuses[screen.id].onlineStatus === 1 ? (
                                                         <span style={{ color: '#22c55e' }}>● Online</span>
                                                     ) : (
-                                                        <span style={{ color: '#ef4444' }}>● Offline</span>
+                                                        <>
+                                                            <span style={{ color: '#ef4444' }}>● Offline</span>
+                                                            {vnnoxStatuses[screen.id].lastSeen && (
+                                                                <span style={{ color: '#6b7280' }}>
+                                                                    {" - Laatst: "}
+                                                                    {new Date(vnnoxStatuses[screen.id].lastSeen!).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}
+                                                                    {" "}
+                                                                    {new Date(vnnoxStatuses[screen.id].lastSeen!).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}
+                                                                </span>
+                                                            )}
+                                                        </>
                                                     )
                                                 ) : (
                                                     <span style={{ color: '#6b7280' }}>○ Niet gekoppeld</span>
