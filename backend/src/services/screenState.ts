@@ -70,7 +70,7 @@ export async function broadcastState() {
 }
 
 export function broadcastVnnoxStatus(
-    statuses: Record<string, { playerId: string; onlineStatus: number; lastOnlineTime: string | null }>
+    statuses: Record<string, { playerId: string; onlineStatus: number; lastSeen: string | null }>
 ) {
     if (!wssInstance) return;
 

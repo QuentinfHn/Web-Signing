@@ -6,7 +6,7 @@ const POLL_INTERVAL = 15_000; // 15 seconds
 const BATCH_SIZE = 100;
 
 type StatusChangeCallback = (
-    statuses: Record<string, { playerId: string; onlineStatus: number; lastOnlineTime: string | null }>
+    statuses: Record<string, { playerId: string; onlineStatus: number; lastSeen: string | null }>
 ) => void;
 
 let statusChangeCallback: StatusChangeCallback | null = null;
@@ -44,7 +44,7 @@ async function pollStatuses() {
         );
 
         // Track changes for WebSocket broadcast
-        const changes: Record<string, { playerId: string; onlineStatus: number; lastOnlineTime: string | null }> = {};
+        const changes: Record<string, { playerId: string; onlineStatus: number; lastSeen: string | null }> = {};
 
         for (const screen of screens) {
             if (!screen.vnnoxPlayerId) continue;
@@ -75,7 +75,7 @@ async function pollStatuses() {
                 changes[screen.id] = {
                     playerId: screen.vnnoxPlayerId,
                     onlineStatus: newOnlineStatus,
-                    lastOnlineTime,
+                    lastSeen: lastOnlineTime,
                 };
             }
         }
