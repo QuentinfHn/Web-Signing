@@ -4,9 +4,9 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Install dependencies
-COPY package.json ./
+COPY package*.json ./
 RUN --mount=type=cache,target=/root/.npm \
-    npm install
+    npm ci
 
 # Copy source and build
 COPY . .
@@ -28,4 +28,3 @@ EXPOSE 80
 
 # Use envsubst with only BACKEND_URL, then start nginx
 CMD ["/bin/sh", "-c", "envsubst '$BACKEND_URL' < /etc/nginx/nginx.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
-
