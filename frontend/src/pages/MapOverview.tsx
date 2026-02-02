@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import { trpcClient, Screen } from "../utils/trpc";
-import { useWebSocket, ScreenState } from "../utils/websocket";
+import { useWebSocket, ScreenState, VnnoxStatusData } from "../utils/websocket";
 import "leaflet/dist/leaflet.css";
 import styles from "./MapOverview.module.css";
 import buttonStyles from "../components/Button.module.css";
@@ -44,16 +44,41 @@ export default function MapOverview() {
     const [screenStates, setScreenStates] = useState<ScreenState>({});
     const [selectedScreenId, setSelectedScreenId] = useState<string | null>(null);
     const markerRefs = useRef<Record<string, L.Marker | null>>({});
+    const [vnnoxStatuses, setVnnoxStatuses] = useState<VnnoxStatusData>({});
+    const [vnnoxEnabled, setVnnoxEnabled] = useState(false);
 
     // Connect to WebSocket for live updates
     const handleStateUpdate = useCallback((state: ScreenState) => {
         setScreenStates(state);
     }, []);
 
-    const { connected } = useWebSocket(handleStateUpdate);
+    const handleVnnoxUpdate = useCallback((statuses: VnnoxStatusData) => {
+        setVnnoxStatuses(prev => ({ ...prev, ...statuses }));
+    }, []);
+
+    const { connected } = useWebSocket(handleStateUpdate, handleVnnoxUpdate);
 
     useEffect(() => {
         trpcClient.screens.list.query().then(setScreens).catch(console.error);
+
+        // Fetch VNNOX status
+        trpcClient.vnnox.isEnabled.query().then(r => {
+            setVnnoxEnabled(r.enabled);
+            if (r.enabled) {
+                trpcClient.vnnox.getStatuses.query().then(statuses => {
+                    const mapped: VnnoxStatusData = {};
+                    for (const [screenId, s] of Object.entries(statuses)) {
+                        mapped[screenId] = {
+                            playerId: s.playerId,
+                            playerName: s.playerName,
+                            onlineStatus: s.onlineStatus,
+                            lastSeen: s.lastSeen?.toString() || null,
+                        };
+                    }
+                    setVnnoxStatuses(mapped);
+                }).catch(console.error);
+            }
+        }).catch(console.error);
     }, []);
 
     // Filter screens with valid coordinates
@@ -111,6 +136,30 @@ export default function MapOverview() {
                                         <h3>{screen.name || screen.id}</h3>
                                         <p><strong>Display:</strong> {screen.displayId}</p>
                                         <p><strong>Status:</strong> {screenStates[screen.id]?.scenario ? "▶ " + getScenarioName(screen.id) : "⏾ Uit"}</p>
+                                        {vnnoxEnabled && (
+                                            <p>
+                                                <strong>Player:</strong>{" "}
+                                                {vnnoxStatuses[screen.id] ? (
+                                                    vnnoxStatuses[screen.id].onlineStatus === 1 ? (
+                                                        <span style={{ color: '#22c55e' }}>● Online</span>
+                                                    ) : (
+                                                        <>
+                                                            <span style={{ color: '#ef4444' }}>● Offline</span>
+                                                            {vnnoxStatuses[screen.id].lastSeen && (
+                                                                <span style={{ color: '#6b7280' }}>
+                                                                    {" - Laatst: "}
+                                                                    {new Date(vnnoxStatuses[screen.id].lastSeen!).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}
+                                                                    {" "}
+                                                                    {new Date(vnnoxStatuses[screen.id].lastSeen!).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}
+                                                                </span>
+                                                            )}
+                                                        </>
+                                                    )
+                                                ) : (
+                                                    <span style={{ color: '#6b7280' }}>○ Niet gekoppeld</span>
+                                                )}
+                                            </p>
+                                        )}
                                         {screen.address && <p><strong>Adres:</strong> {screen.address}</p>}
                                     </div>
                                 </Popup>

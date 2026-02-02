@@ -329,6 +329,110 @@ curl -X POST http://localhost:8080/api/companion/presets/trigger \
   "success": true}
 ```
 
+### 10. Get VNNOX Player Status (All Screens)
+
+Returns the online/offline status of all screens that have a VNNOX player linked. Status is polled from VNNOX every 15 seconds and cached in the database.
+
+**Endpoint:** `GET /vnnox/status`
+
+**Authentication:** Required (if `ADMIN_PASSWORD` is set)
+
+**Response (VNNOX enabled):**
+```json
+{
+  "enabled": true,
+  "screens": [
+    {
+      "screenId": "scr_123abc_xyz",
+      "screenName": "Screen 1",
+      "displayId": "wall-1",
+      "playerId": "8208967d40e9980bab6d12367dc88e0b",
+      "playerName": "Player Lobby",
+      "online": true,
+      "lastSeen": "2025-01-15T14:30:00.000Z"
+    },
+    {
+      "screenId": "scr_456def_abc",
+      "screenName": "Screen 2",
+      "displayId": "wall-1",
+      "playerId": "a3b4c5d6e7f8901234567890abcdef12",
+      "playerName": "Player Entrance",
+      "online": false,
+      "lastSeen": "2025-01-15T12:00:00.000Z"
+    }
+  ]
+}
+```
+
+**Response (VNNOX not configured):**
+```json
+{
+  "enabled": false,
+  "screens": []
+}
+```
+
+**Example:**
+```bash
+curl http://localhost:8080/api/companion/vnnox/status \
+  -H "x-api-key: YOUR_ADMIN_PASSWORD"
+```
+
+---
+
+### 11. Get VNNOX Player Status (Single Screen)
+
+Returns the VNNOX player status for a specific screen.
+
+**Endpoint:** `GET /vnnox/status/:screenId`
+
+**Authentication:** Required (if `ADMIN_PASSWORD` is set)
+
+**Response (screen linked to player):**
+```json
+{
+  "enabled": true,
+  "screen": {
+    "screenId": "scr_123abc_xyz",
+    "screenName": "Screen 1",
+    "displayId": "wall-1",
+    "linked": true,
+    "playerId": "8208967d40e9980bab6d12367dc88e0b",
+    "playerName": "Player Lobby",
+    "online": true,
+    "lastSeen": "2025-01-15T14:30:00.000Z"
+  }
+}
+```
+
+**Response (screen not linked to any player):**
+```json
+{
+  "enabled": true,
+  "screen": {
+    "screenId": "scr_123abc_xyz",
+    "screenName": "Screen 1",
+    "displayId": "wall-1",
+    "linked": false,
+    "playerId": null,
+    "playerName": null,
+    "online": null,
+    "lastSeen": null
+  }
+}
+```
+
+**Errors:**
+- `404` - Screen not found
+
+**Example:**
+```bash
+curl http://localhost:8080/api/companion/vnnox/status/scr_123abc_xyz \
+  -H "x-api-key: YOUR_ADMIN_PASSWORD"
+```
+
+---
+
 ## Bitfocus Companion Setup
 
 ### Using the Generic HTTP Module

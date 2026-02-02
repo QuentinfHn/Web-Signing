@@ -48,6 +48,10 @@ describe('useScreenEditor hook', () => {
       lat: 50.8514,
       lng: 5.6910,
       address: 'Test Address',
+      vnnoxPlayerId: null,
+      vnnoxPlayerName: null,
+      vnnoxOnlineStatus: null,
+      vnnoxLastSeen: null,
     }
 
     act(() => {
@@ -187,6 +191,10 @@ describe('useScreenEditor hook', () => {
       lat: 50.8514,
       lng: 5.6910,
       address: 'Test Address',
+      vnnoxPlayerId: null,
+      vnnoxPlayerName: null,
+      vnnoxOnlineStatus: null,
+      vnnoxLastSeen: null,
     }
 
     act(() => {

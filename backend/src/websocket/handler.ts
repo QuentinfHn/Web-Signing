@@ -2,6 +2,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { prisma } from "../prisma/client.js";
 import { setWebSocketServer, broadcastState, type ScreenStateMap } from "../services/screenState.js";
 import { invalidateStateCache } from "../services/cache.js";
+import { isVnnoxEnabled } from "../services/vnnox.js";
 
 const PING_INTERVAL = 30000; // 30 seconds
 
@@ -77,6 +78,47 @@ export function createWebSocketHandler(wss: WebSocketServer) {
                 screens: stateMap,
             })
         );
+
+        // Send VNNOX statuses if enabled
+        if (isVnnoxEnabled()) {
+            try {
+                const vnnoxScreens = await prisma.screen.findMany({
+                    where: { vnnoxPlayerId: { not: null } },
+                    select: {
+                        id: true,
+                        vnnoxPlayerId: true,
+                        vnnoxPlayerName: true,
+                        vnnoxOnlineStatus: true,
+                        vnnoxLastSeen: true,
+                    },
+                });
+
+                if (vnnoxScreens.length > 0) {
+                    const statuses: Record<string, {
+                        playerId: string;
+                        playerName: string | null;
+                        onlineStatus: number | null;
+                        lastSeen: string | null;
+                    }> = {};
+
+                    for (const screen of vnnoxScreens) {
+                        statuses[screen.id] = {
+                            playerId: screen.vnnoxPlayerId!,
+                            playerName: screen.vnnoxPlayerName,
+                            onlineStatus: screen.vnnoxOnlineStatus,
+                            lastSeen: screen.vnnoxLastSeen?.toISOString() || null,
+                        };
+                    }
+
+                    ws.send(JSON.stringify({
+                        type: "vnnoxStatus",
+                        statuses,
+                    }));
+                }
+            } catch (error) {
+                console.error("Failed to send VNNOX status on connect:", error);
+            }
+        }
 
         ws.on("message", async (msg) => {
             try {
