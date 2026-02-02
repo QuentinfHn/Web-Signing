@@ -13,6 +13,9 @@ services:
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
       - JWT_SECRET=${JWT_SECRET:-}
+      - VNNOX_APP_KEY=${VNNOX_APP_KEY:-}
+      - VNNOX_APP_SECRET=${VNNOX_APP_SECRET:-}
+      - VNNOX_API_URL=${VNNOX_API_URL:-https://open-eu.vnnox.com}
     restart: unless-stopped
     healthcheck:
       test: [ "CMD", "wget", "-q", "--spider", "http://localhost:8080/health" ]
