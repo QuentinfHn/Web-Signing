@@ -5,7 +5,7 @@ import { verifyPassword, generateToken, isAuthEnabled } from "../auth/auth.js";
 import type { Context } from "./context.js";
 import { invalidateDisplaysCache, invalidateScreensCache, invalidateStateCache, invalidateScenarioCache } from "../services/cache.js";
 import { getScreenStateMap } from "../services/screenState.js";
-import { isVnnoxEnabled, fetchPlayerList } from "../services/vnnox.js";
+import { isVnnoxEnabled, fetchPlayerList, fetchOnlineStatuses } from "../services/vnnox.js";
 
 const t = initTRPC.context<Context>().create();
 
@@ -1334,16 +1334,47 @@ export const vnnoxRouter = router({
                 throw new TRPCError({ code: "PRECONDITION_FAILED", message: "VNNOX niet geconfigureerd" });
             }
 
+            // First, fetch the actual online status from VNNOX
+            let onlineStatus = 0;
+            let lastSeen: Date | null = null;
+            try {
+                const statuses = await fetchOnlineStatuses([input.playerId]);
+                if (statuses.length > 0) {
+                    onlineStatus = statuses[0].onlineStatus;
+                    if (statuses[0].lastOnlineTime) {
+                        lastSeen = new Date(statuses[0].lastOnlineTime);
+                    }
+                }
+            } catch (error) {
+                // If we can't fetch the status, continue with defaults
+                console.error("Failed to fetch VNNOX status during link:", error);
+            }
+
             const screen = await prisma.screen.update({
                 where: { id: input.screenId },
                 data: {
                     vnnoxPlayerId: input.playerId,
                     vnnoxPlayerName: input.playerName,
-                    vnnoxOnlineStatus: 0,
-                    vnnoxLastSeen: null,
+                    vnnoxOnlineStatus: onlineStatus,
+                    vnnoxLastSeen: lastSeen,
                 },
             });
             invalidateScreensCache(screen.displayId);
+
+            // Broadcast the status update via WebSocket so the UI updates immediately
+            try {
+                const { broadcastVnnoxStatus } = await import("../services/screenState.js");
+                broadcastVnnoxStatus({
+                    [input.screenId]: {
+                        playerId: input.playerId,
+                        onlineStatus: onlineStatus,
+                        lastSeen: lastSeen?.toISOString() || null,
+                    },
+                });
+            } catch (error) {
+                console.error("Failed to broadcast VNNOX status:", error);
+            }
+
             return screen;
         }),
 
