@@ -165,9 +165,6 @@ jobs:
             echo "==> SSH connected, starting deployment..."
             ssh -o ConnectTimeout=60 -o ServerAliveInterval=30 -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" "
               set -e
-              echo '==> Logging into GitHub Container Registry...'
-              echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-              
               echo '==> Updating repository...'
               cd /opt/signage-led
               git fetch origin main
