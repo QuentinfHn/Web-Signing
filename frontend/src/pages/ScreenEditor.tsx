@@ -13,16 +13,19 @@ import { useDisplays } from "../hooks/useDisplays";
 import { useScreens } from "../hooks/useScreens";
 import { useGeocode } from "../hooks/useGeocode";
 import { useScreenEditor } from "../hooks/useScreenEditor";
+import { useVnnox } from "../hooks/useVnnox";
 
 import styles from "./ScreenEditor.module.css";
 import buttonStyles from "../components/Button.module.css";
 import modalStyles from "../components/Modal.module.css";
+import vnnoxStyles from "../components/VnnoxPlayerSelector.module.css";
 
 export default function ScreenEditor() {
     const { displays, createDisplay, deleteDisplay, updateDisplay } = useDisplays();
-    const { screens, updateScreen, deleteScreen, createScreen, exportScreens, importScreens } = useScreens();
+    const { screens, updateScreen, deleteScreen, createScreen, exportScreens, importScreens, loadScreens } = useScreens();
     const { geocode } = useGeocode();
     const screenEditor = useScreenEditor(displays[0]?.id || "");
+    const vnnox = useVnnox();
 
     const [showImportExport, setShowImportExport] = useState(false);
     const [conflictMode, setConflictMode] = useState<ConflictMode>("update");
@@ -197,6 +200,28 @@ export default function ScreenEditor() {
         screenEditor.setIsCreating(false);
     };
 
+    const handleLinkPlayer = async (screenId: string, playerId: string, playerName: string) => {
+        try {
+            await vnnox.linkPlayer(screenId, playerId, playerName);
+            await loadScreens();
+        } catch (err) {
+            alert(err instanceof Error ? err.message : "Koppelen mislukt");
+        }
+    };
+
+    const handleUnlinkPlayer = async (screenId: string) => {
+        try {
+            await vnnox.unlinkPlayer(screenId);
+            await loadScreens();
+        } catch (err) {
+            alert(err instanceof Error ? err.message : "Ontkoppelen mislukt");
+        }
+    };
+
+    const editingScreen = screenEditor.editingId
+        ? screens.find(s => s.id === screenEditor.editingId)
+        : null;
+
     const displayScreens = sortScreensByName(screens.filter(s => s.displayId === selectedDisplayId));
 
     return (
@@ -278,6 +303,12 @@ export default function ScreenEditor() {
                                 onSetNewScreenLocationMode={screenEditor.setNewScreenLocationMode}
                                 onSetEditLocationMode={screenEditor.setEditLocationMode}
                                 onShowDeleteConfirm={showDeleteScreenConfirm}
+                                vnnoxEnabled={vnnox.isEnabled}
+                                vnnoxPlayerName={editingScreen?.vnnoxPlayerName}
+                                vnnoxOnlineStatus={editingScreen?.vnnoxOnlineStatus}
+                                onLinkPlayer={handleLinkPlayer}
+                                onUnlinkPlayer={handleUnlinkPlayer}
+                                searchPlayers={vnnox.searchPlayers}
                             />
 
                             <ScreenCanvas
@@ -297,6 +328,7 @@ export default function ScreenEditor() {
                                         <th>Lat</th>
                                         <th>Lng</th>
                                         <th>Adres</th>
+                                        {vnnox.isEnabled && <th>VNNOX</th>}
                                         <th></th>
                                     </tr>
                                 </thead>
@@ -315,6 +347,20 @@ export default function ScreenEditor() {
                                             <td>{screen.lat?.toFixed(5)}</td>
                                             <td>{screen.lng?.toFixed(5)}</td>
                                             <td>{screen.address}</td>
+                                            {vnnox.isEnabled && (
+                                                <td>
+                                                    {screen.vnnoxPlayerId ? (
+                                                        <span style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
+                                                            <span
+                                                                className={`${vnnoxStyles.vnnoxDot} ${screen.vnnoxOnlineStatus === 1 ? vnnoxStyles.online : vnnoxStyles.offline}`}
+                                                            />
+                                                            {screen.vnnoxPlayerName || "Gekoppeld"}
+                                                        </span>
+                                                    ) : (
+                                                        <span style={{ color: "var(--text-secondary, #a0a0b0)", fontSize: "0.85rem" }}>-</span>
+                                                    )}
+                                                </td>
+                                            )}
                                             <td className={styles.actions}>
                                                 <button
                                                     className={`${buttonStyles.btnIcon} ${buttonStyles.btnEdit}`}

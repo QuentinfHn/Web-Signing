@@ -14,15 +14,27 @@ export interface ScreenState {
     };
 }
 
-export interface WebSocketMessage {
-    type: "state";
-    screens: ScreenState;
+export interface VnnoxStatusData {
+    [screenId: string]: {
+        playerId: string;
+        playerName?: string | null;
+        onlineStatus: number | null;
+        lastSeen?: string | null;
+        lastOnlineTime?: string | null;
+    };
 }
+
+export type WebSocketMessage =
+    | { type: "state"; screens: ScreenState }
+    | { type: "vnnoxStatus"; statuses: VnnoxStatusData };
 
 const MAX_RECONNECT_DELAY = 30000; // 30 seconds
 const INITIAL_RECONNECT_DELAY = 1000; // 1 second
 
-export function useWebSocket(onStateUpdate: (state: ScreenState) => void) {
+export function useWebSocket(
+    onStateUpdate: (state: ScreenState) => void,
+    onVnnoxUpdate?: (statuses: VnnoxStatusData) => void,
+) {
     const wsRef = useRef<WebSocket | null>(null);
     const [connected, setConnected] = useState(false);
     const [reconnecting, setReconnecting] = useState(false);
@@ -31,10 +43,15 @@ export function useWebSocket(onStateUpdate: (state: ScreenState) => void) {
     const mountedRef = useRef(true);
 
     const savedCallback = useRef(onStateUpdate);
+    const savedVnnoxCallback = useRef(onVnnoxUpdate);
 
     useEffect(() => {
         savedCallback.current = onStateUpdate;
     }, [onStateUpdate]);
+
+    useEffect(() => {
+        savedVnnoxCallback.current = onVnnoxUpdate;
+    }, [onVnnoxUpdate]);
 
     const getWsUrl = useCallback(() => {
         const apiUrl = import.meta.env.VITE_API_URL;
@@ -94,6 +111,10 @@ export function useWebSocket(onStateUpdate: (state: ScreenState) => void) {
                 if (message.type === "state") {
                     if (savedCallback.current) {
                         savedCallback.current(message.screens);
+                    }
+                } else if (message.type === "vnnoxStatus") {
+                    if (savedVnnoxCallback.current) {
+                        savedVnnoxCallback.current(message.statuses);
                     }
                 }
             } catch (error) {

@@ -68,3 +68,20 @@ export async function broadcastState() {
         }
     });
 }
+
+export function broadcastVnnoxStatus(
+    statuses: Record<string, { playerId: string; onlineStatus: number; lastSeen: string | null }>
+) {
+    if (!wssInstance) return;
+
+    const payload = JSON.stringify({
+        type: "vnnoxStatus",
+        statuses,
+    });
+
+    wssInstance.clients?.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(payload);
+        }
+    });
+}

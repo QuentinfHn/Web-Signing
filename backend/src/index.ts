@@ -13,6 +13,8 @@ import { logger } from "./utils/logger.js";
 import { initDefaultData } from "./startup/initDefaultData.js";
 import companionRouter from "./routers/companion.js";
 import uploadRouter from "./routers/uploadRouter.js";
+import { startVnnoxPoller, setStatusChangeCallback } from "./services/vnnoxPoller.js";
+import { broadcastVnnoxStatus } from "./services/screenState.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,6 +28,10 @@ await initDefaultData();
 
 // Initialize WebSocket handler
 createWebSocketHandler(wss);
+
+// Start VNNOX poller (if configured)
+setStatusChangeCallback(broadcastVnnoxStatus);
+startVnnoxPoller();
 
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || process.env.FRONTEND_URL || "http://localhost:3000").split(",").map(o => o.trim());
 const ALLOWED_METHODS = ["GET", "POST", "OPTIONS", "PUT", "DELETE"];

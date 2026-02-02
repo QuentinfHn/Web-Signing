@@ -5,6 +5,7 @@ import { verifyPassword, generateToken, isAuthEnabled } from "../auth/auth.js";
 import type { Context } from "./context.js";
 import { invalidateDisplaysCache, invalidateScreensCache, invalidateStateCache, invalidateScenarioCache } from "../services/cache.js";
 import { getScreenStateMap } from "../services/screenState.js";
+import { isVnnoxEnabled, fetchPlayerList } from "../services/vnnox.js";
 
 const t = initTRPC.context<Context>().create();
 
@@ -1236,6 +1237,112 @@ export const scenarioNamesRouter = router({
     }),
 });
 
+// VNNOX router
+export const vnnoxRouter = router({
+    isEnabled: publicProcedure.query(() => {
+        return { enabled: isVnnoxEnabled() };
+    }),
+
+    listPlayers: protectedProcedure
+        .input(z.object({
+            count: z.number().min(1).max(200).default(50),
+            start: z.number().min(0).default(0),
+            name: z.string().optional(),
+        }).optional())
+        .query(async ({ input }) => {
+            if (!isVnnoxEnabled()) {
+                throw new TRPCError({ code: "PRECONDITION_FAILED", message: "VNNOX niet geconfigureerd" });
+            }
+            return fetchPlayerList({
+                count: input?.count || 50,
+                start: input?.start || 0,
+                name: input?.name,
+            });
+        }),
+
+    linkPlayer: protectedProcedure
+        .input(z.object({
+            screenId: z.string(),
+            playerId: z.string(),
+            playerName: z.string(),
+        }))
+        .mutation(async ({ input }) => {
+            if (!isVnnoxEnabled()) {
+                throw new TRPCError({ code: "PRECONDITION_FAILED", message: "VNNOX niet geconfigureerd" });
+            }
+
+            // Check if player is already linked to another screen
+            const existing = await prisma.screen.findUnique({
+                where: { vnnoxPlayerId: input.playerId },
+            });
+            if (existing && existing.id !== input.screenId) {
+                throw new TRPCError({
+                    code: "CONFLICT",
+                    message: `Player is al gekoppeld aan scherm "${existing.name || existing.id}"`,
+                });
+            }
+
+            const screen = await prisma.screen.update({
+                where: { id: input.screenId },
+                data: {
+                    vnnoxPlayerId: input.playerId,
+                    vnnoxPlayerName: input.playerName,
+                    vnnoxOnlineStatus: 0,
+                    vnnoxLastSeen: null,
+                },
+            });
+            invalidateScreensCache(screen.displayId);
+            return screen;
+        }),
+
+    unlinkPlayer: protectedProcedure
+        .input(z.object({ screenId: z.string() }))
+        .mutation(async ({ input }) => {
+            const screen = await prisma.screen.update({
+                where: { id: input.screenId },
+                data: {
+                    vnnoxPlayerId: null,
+                    vnnoxPlayerName: null,
+                    vnnoxOnlineStatus: null,
+                    vnnoxLastSeen: null,
+                },
+            });
+            invalidateScreensCache(screen.displayId);
+            return screen;
+        }),
+
+    getStatuses: publicProcedure.query(async () => {
+        const screens = await prisma.screen.findMany({
+            where: { vnnoxPlayerId: { not: null } },
+            select: {
+                id: true,
+                vnnoxPlayerId: true,
+                vnnoxPlayerName: true,
+                vnnoxOnlineStatus: true,
+                vnnoxLastSeen: true,
+            },
+        });
+
+        const statuses: Record<string, {
+            playerId: string;
+            playerName: string | null;
+            onlineStatus: number | null;
+            lastSeen: Date | null;
+        }> = {};
+
+        for (const screen of screens) {
+            statuses[screen.id] = {
+                playerId: screen.vnnoxPlayerId!,
+                playerName: screen.vnnoxPlayerName,
+                onlineStatus: screen.vnnoxOnlineStatus,
+                lastSeen: screen.vnnoxLastSeen,
+            };
+        }
+
+        return statuses;
+    }),
+});
+
 // Main app router
 export const appRouter = router({
     auth: authRouter,
@@ -1246,6 +1353,7 @@ export const appRouter = router({
     content: contentRouter,
     scenarios: scenariosRouter,
     scenarioNames: scenarioNamesRouter,
+    vnnox: vnnoxRouter,
 });
 
 export type AppRouter = typeof appRouter;

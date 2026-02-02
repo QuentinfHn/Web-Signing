@@ -26,7 +26,14 @@ model Screen {
   address   String?
   display   Display  @relation(fields: [displayId], references: [id])
 
+  // VNNOX player koppeling
+  vnnoxPlayerId     String?   @unique
+  vnnoxPlayerName   String?
+  vnnoxOnlineStatus Int?      @default(0)
+  vnnoxLastSeen     DateTime?
+
   @@index([displayId])
+  @@index([vnnoxPlayerId])
 }
 
 model Preset {
