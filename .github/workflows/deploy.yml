@@ -156,7 +156,7 @@ jobs:
             
             # Test SSH connection first
             if ! ssh -o ConnectTimeout=30 -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" "echo 'SSH connection OK'"; then
-              echo "❌ SSH connection failed. Retrying in 15 seconds..."
+              echo "[ERROR] SSH connection failed. Retrying in 15 seconds..."
               sleep 15
               continue
             fi
@@ -180,12 +180,12 @@ jobs:
               echo '==> Verifying services...'
               docker compose ps
             " && {
-              echo "✅ Deployment successful!"
+              echo "[SUCCESS] Deployment completed!"
               exit 0
             }
             
             # Deployment failed - get logs for debugging
-            echo "❌ Deployment script failed!"
+            echo "[ERROR] Deployment script failed!"
             echo "==> Fetching container logs for debugging..."
             ssh -o ConnectTimeout=30 -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" "
               cd /opt/signage-led
@@ -198,7 +198,7 @@ jobs:
             echo "Retrying in 15 seconds..."
             sleep 15
           done
-          echo "❌ Deployment failed after 3 attempts."
+          echo "[ERROR] Deployment failed after 3 attempts."
           exit 1
 
       - name: Set Deployment Status (Success)
