@@ -151,24 +151,54 @@ jobs:
           echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null
           echo "StrictHostKeyChecking no" >> ~/.ssh/config
           
-          for i in {1..5}; do
-            echo "Attempt $i of 5..."
-            if ssh -v -o ConnectTimeout=60 -o ServerAliveInterval=60 -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" "
-              echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          for i in {1..3}; do
+            echo "==> Attempt $i of 3..."
+            
+            # Test SSH connection first
+            if ! ssh -o ConnectTimeout=30 -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" "echo 'SSH connection OK'"; then
+              echo "❌ SSH connection failed. Retrying in 15 seconds..."
+              sleep 15
+              continue
+            fi
+            
+            # SSH works, now run deployment
+            echo "==> SSH connected, starting deployment..."
+            ssh -o ConnectTimeout=60 -o ServerAliveInterval=30 -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" "
               set -e
+              echo '==> Logging into GitHub Container Registry...'
+              echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+              
+              echo '==> Updating repository...'
               cd /opt/signage-led
               git fetch origin main
               git reset --hard origin/main
+              
+              echo '==> Running deploy script...'
               chmod +x deploy/deploy.sh
               ./deploy/deploy.sh
-            "; then
-              echo "Deployment successful!"
+              
+              echo '==> Verifying services...'
+              docker compose ps
+            " && {
+              echo "✅ Deployment successful!"
               exit 0
-            fi
-            echo "SSH connection failed. Retrying in 15 seconds..."
+            }
+            
+            # Deployment failed - get logs for debugging
+            echo "❌ Deployment script failed!"
+            echo "==> Fetching container logs for debugging..."
+            ssh -o ConnectTimeout=30 -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" "
+              cd /opt/signage-led
+              echo '--- Backend logs (last 50 lines) ---'
+              docker compose logs --tail=50 backend 2>&1 || true
+              echo '--- Container status ---'
+              docker compose ps 2>&1 || true
+            " || true
+            
+            echo "Retrying in 15 seconds..."
             sleep 15
           done
-          echo "Failed to connect after 5 attempts."
+          echo "❌ Deployment failed after 3 attempts."
           exit 1
 
       - name: Set Deployment Status (Success)
