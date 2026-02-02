@@ -25,6 +25,9 @@ class SignageCache {
     };
 
     private syncCallbacks: Set<(status: SyncStatus) => void> = new Set();
+    private prefetchedUrls: Set<string> = new Set();
+    private prefetchInFlight: Set<string> = new Set();
+    private readonly PREFETCH_CONCURRENCY = 4;
 
     async initialize(): Promise<boolean> {
         try {
@@ -51,6 +54,68 @@ class SignageCache {
                 console.error('Error in sync status callback:', error);
             }
         });
+    }
+
+    private shouldPrefetch(url: string): boolean {
+        if (typeof window === 'undefined') return false;
+        if (!url) return false;
+        try {
+            const resolved = new URL(url, window.location.origin);
+            return resolved.origin === window.location.origin && resolved.pathname.startsWith('/content/');
+        } catch (error) {
+            console.error('Failed to parse prefetch URL:', error);
+            return false;
+        }
+    }
+
+    private async prefetchUrls(urls: string[]): Promise<void> {
+        if (typeof fetch === 'undefined' || typeof navigator === 'undefined') return;
+        if (navigator.onLine === false) return;
+
+        const unique = Array.from(new Set(urls));
+        const queue = unique.filter((url) =>
+            this.shouldPrefetch(url) && !this.prefetchedUrls.has(url) && !this.prefetchInFlight.has(url)
+        );
+
+        if (queue.length === 0) return;
+
+        queue.forEach((url) => this.prefetchInFlight.add(url));
+
+        const worker = async () => {
+            while (queue.length > 0) {
+                const url = queue.shift();
+                if (!url) continue;
+                try {
+                    const response = await fetch(url);
+                    if (response.ok || response.type === 'opaque') {
+                        this.prefetchedUrls.add(url);
+                    }
+                } catch (error) {
+                    console.error('Failed to prefetch content:', error);
+                } finally {
+                    this.prefetchInFlight.delete(url);
+                }
+            }
+        };
+
+        const concurrency = Math.min(this.PREFETCH_CONCURRENCY, queue.length);
+        await Promise.all(Array.from({ length: concurrency }, () => worker()));
+    }
+
+    async warmContentCache(states: ScreenState): Promise<void> {
+        if (!states || Object.keys(states).length === 0) return;
+        const urls: string[] = [];
+
+        Object.values(states).forEach((state) => {
+            if (state.src) {
+                urls.push(state.src);
+            }
+            if (state.slideshow?.images?.length) {
+                urls.push(...state.slideshow.images);
+            }
+        });
+
+        await this.prefetchUrls(urls);
     }
 
     async loadDisplays(): Promise<CacheDisplay[]> {
@@ -168,6 +233,11 @@ class SignageCache {
             });
 
             await cacheDB.putStates(cacheStates);
+
+            // Warm the Service Worker cache for offline playback.
+            void this.warmContentCache(states).catch((error) => {
+                console.error('Failed to warm content cache:', error);
+            });
         } catch (error) {
             console.error('Failed to cache states:', error);
             throw error;
@@ -192,49 +262,78 @@ class SignageCache {
         this.notifySyncStatusChange();
 
         try {
+            const failures: string[] = [];
+            const safeFetch = async <T>(label: string, fn: () => Promise<T>): Promise<T | null> => {
+                try {
+                    return await fn();
+                } catch (error) {
+                    failures.push(label);
+                    console.error(`Failed to fetch ${label}:`, error);
+                    return null;
+                }
+            };
+
             const [displays, screens, states] = await Promise.all([
-                fetchFn.displays().catch((error) => {
-                    console.error('Failed to fetch displays:', error);
-                    return null;
-                }),
-                fetchFn.screens().catch((error) => {
-                    console.error('Failed to fetch screens:', error);
-                    return null;
-                }),
-                fetchFn.states().catch((error) => {
-                    console.error('Failed to fetch states:', error);
-                    return null;
-                })
+                safeFetch('displays', fetchFn.displays),
+                safeFetch('screens', fetchFn.screens),
+                safeFetch('states', fetchFn.states)
             ]);
 
+            let didUpdate = false;
+
             if (displays) {
-                await this.cacheDisplays(displays);
+                try {
+                    await this.cacheDisplays(displays);
+                    didUpdate = true;
+                } catch (error) {
+                    failures.push('displays-cache');
+                    console.error('Failed to cache displays:', error);
+                }
             }
 
             if (screens) {
-                await this.cacheScreens(screens, displayId);
+                try {
+                    await this.cacheScreens(screens, displayId);
+                    didUpdate = true;
+                } catch (error) {
+                    failures.push('screens-cache');
+                    console.error('Failed to cache screens:', error);
+                }
             }
 
             if (states) {
-                await this.cacheStates(states);
+                try {
+                    await this.cacheStates(states);
+                    didUpdate = true;
+                } catch (error) {
+                    failures.push('states-cache');
+                    console.error('Failed to cache states:', error);
+                }
             }
 
-            const metadata = await cacheDB.getMetadata();
-            await cacheDB.updateMetadata({
-                id: 'meta',
-                version: 1,
-                lastUpdated: new Date().toISOString(),
-                displayIds: metadata?.displayIds || [displayId]
-            });
+            if (didUpdate) {
+                try {
+                    const metadata = await cacheDB.getMetadata();
+                    await cacheDB.updateMetadata({
+                        id: 'meta',
+                        version: 1,
+                        lastUpdated: new Date().toISOString(),
+                        displayIds: metadata?.displayIds || [displayId]
+                    });
+                } catch (error) {
+                    failures.push('metadata');
+                    console.error('Failed to update cache metadata:', error);
+                }
+            }
 
             this.syncStatus = {
                 isSyncing: false,
-                lastSync: new Date(),
-                lastError: null
+                lastSync: didUpdate ? new Date() : null,
+                lastError: failures.length > 0 ? `Sync issues: ${failures.join(', ')}` : null
             };
             this.notifySyncStatusChange();
 
-            return true;
+            return didUpdate;
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             console.error('Sync failed:', error);

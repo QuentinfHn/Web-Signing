@@ -16,6 +16,7 @@ vi.mock('../../lib/signageCache', () => ({
     loadScreens: vi.fn().mockResolvedValue([]),
     loadStates: vi.fn().mockResolvedValue({}),
     cacheStates: vi.fn().mockResolvedValue(undefined),
+    warmContentCache: vi.fn().mockResolvedValue(undefined),
     syncWithServer: vi.fn().mockResolvedValue(true),
     onSyncStatusChange: vi.fn().mockReturnValue(() => {}),
     isCacheValid: vi.fn().mockResolvedValue(false),

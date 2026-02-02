@@ -211,10 +211,17 @@ export const screenRouter = router({
         }))
         .mutation(async ({ input }) => {
             const { id, ...data } = input;
+            const existing = await prisma.screen.findUnique({
+                where: { id },
+                select: { displayId: true },
+            });
             const screen = await prisma.screen.update({
                 where: { id },
                 data,
             });
+            if (existing?.displayId && existing.displayId !== screen.displayId) {
+                invalidateScreensCache(existing.displayId);
+            }
             invalidateScreensCache(screen.displayId);
             return screen;
         }),
@@ -861,6 +868,19 @@ export const scenariosRouter = router({
                 },
             });
             invalidateScenarioCache(input.screenId, input.scenario);
+
+            const activeState = await prisma.screenState.findUnique({
+                where: { screenId: input.screenId },
+            });
+            if (activeState?.scenario === input.scenario) {
+                await prisma.screenState.update({
+                    where: { screenId: input.screenId },
+                    data: { imageSrc: input.imagePath, scenario: input.scenario },
+                });
+                invalidateStateCache(input.screenId);
+                const { broadcastState } = await import("../services/screenState.js");
+                await broadcastState();
+            }
             return assignment;
         }),
 
@@ -1048,6 +1068,14 @@ export const scenariosRouter = router({
 
             invalidateScenarioCache(input.screenId, input.scenario);
 
+            const activeState = await prisma.screenState.findUnique({
+                where: { screenId: input.screenId },
+            });
+            if (activeState?.scenario === input.scenario) {
+                const { broadcastState } = await import("../services/screenState.js");
+                await broadcastState();
+            }
+
             return newImage;
         }),
 
@@ -1076,6 +1104,14 @@ export const scenariosRouter = router({
             }
 
             invalidateScenarioCache(image.assignment.screenId, image.assignment.scenario);
+
+            const activeState = await prisma.screenState.findUnique({
+                where: { screenId: image.assignment.screenId },
+            });
+            if (activeState?.scenario === image.assignment.scenario) {
+                const { broadcastState } = await import("../services/screenState.js");
+                await broadcastState();
+            }
 
             return { success: true };
         }),
@@ -1125,6 +1161,14 @@ export const scenariosRouter = router({
 
             invalidateScenarioCache(input.screenId, input.scenario);
 
+            const activeState = await prisma.screenState.findUnique({
+                where: { screenId: input.screenId },
+            });
+            if (activeState?.scenario === input.scenario) {
+                const { broadcastState } = await import("../services/screenState.js");
+                await broadcastState();
+            }
+
             return { success: true };
         }),
 
@@ -1146,6 +1190,14 @@ export const scenariosRouter = router({
                 data: { intervalMs: input.intervalMs },
             });
             invalidateScenarioCache(input.screenId, input.scenario);
+
+            const activeState = await prisma.screenState.findUnique({
+                where: { screenId: input.screenId },
+            });
+            if (activeState?.scenario === input.scenario) {
+                const { broadcastState } = await import("../services/screenState.js");
+                await broadcastState();
+            }
             return assignment;
         }),
 });
@@ -1198,6 +1250,7 @@ export const scenarioNamesRouter = router({
                 where: { scenario: input.oldName },
                 data: { scenario: input.newName },
             });
+            invalidateScenarioCache();
             if (stateUpdate.count > 0) {
                 invalidateStateCache();
                 const { broadcastState } = await import("../services/screenState.js");
@@ -1214,10 +1267,20 @@ export const scenarioNamesRouter = router({
             await prisma.scenarioAssignment.deleteMany({
                 where: { scenario: input.name },
             });
+            const stateUpdate = await prisma.screenState.updateMany({
+                where: { scenario: input.name },
+                data: { imageSrc: null, scenario: null },
+            });
+            invalidateScenarioCache();
             // Delete the scenario
             await prisma.scenario.delete({
                 where: { name: input.name },
             });
+            if (stateUpdate.count > 0) {
+                invalidateStateCache();
+                const { broadcastState } = await import("../services/screenState.js");
+                await broadcastState();
+            }
             return { success: true };
         }),
 

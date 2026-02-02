@@ -37,12 +37,14 @@ class InMemoryCache {
     invalidateScenario(screenId?: string, scenario?: string): void {
         if (screenId && scenario) {
             this.scenarioCache.delete(`${screenId}:${scenario}`);
+            this.scenarioCache.delete('all');
         } else if (screenId) {
             for (const key of this.scenarioCache.keys()) {
                 if (key.startsWith(`${screenId}:`)) {
                     this.scenarioCache.delete(key);
                 }
             }
+            this.scenarioCache.delete('all');
         } else {
             this.scenarioCache.clear();
         }
@@ -51,6 +53,7 @@ class InMemoryCache {
     invalidateScreens(displayId?: string): void {
         if (displayId) {
             this.screensCache.delete(displayId);
+            this.screensCache.delete('all');
         } else {
             this.screensCache.clear();
         }

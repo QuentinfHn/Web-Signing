@@ -49,6 +49,10 @@ export default function Display() {
                     signageCache.loadStates()
                 ]);
 
+                void signageCache.warmContentCache(cachedStates).catch((error) => {
+                    console.error('Failed to warm content cache from IndexedDB:', error);
+                });
+
                 if (mounted) {
                     if (cachedScreens.length > 0) {
                         setScreens(cachedScreens);
