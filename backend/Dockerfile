@@ -37,4 +37,4 @@ RUN mkdir -p /app/data /app/content
 EXPOSE 8080
 
 # Run schema sync and start server
-CMD npx prisma db push && npm start
+CMD npx prisma db push --accept-data-loss && npm start
