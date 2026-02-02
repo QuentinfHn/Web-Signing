@@ -22,7 +22,6 @@
         "express": "^5.0.0",
         "express-rate-limit": "^8.2.1",
         "jsonwebtoken": "^9.0.3",
-        "led-controller-root": "file:..",
         "multer": "^2.0.2",
         "ws": "^8.18.0",
         "zod": "^3.24.0"
