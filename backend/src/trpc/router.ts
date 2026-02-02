@@ -1334,17 +1334,6 @@ export const vnnoxRouter = router({
                 throw new TRPCError({ code: "PRECONDITION_FAILED", message: "VNNOX niet geconfigureerd" });
             }
 
-            // Check if player is already linked to another screen
-            const existing = await prisma.screen.findUnique({
-                where: { vnnoxPlayerId: input.playerId },
-            });
-            if (existing && existing.id !== input.screenId) {
-                throw new TRPCError({
-                    code: "CONFLICT",
-                    message: `Player is al gekoppeld aan scherm "${existing.name || existing.id}"`,
-                });
-            }
-
             const screen = await prisma.screen.update({
                 where: { id: input.screenId },
                 data: {

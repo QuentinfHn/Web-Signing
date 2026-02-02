@@ -25,9 +25,11 @@ async function pollStatuses() {
 
         if (screens.length === 0) return;
 
-        const playerIds = screens
-            .map((s) => s.vnnoxPlayerId)
-            .filter((id): id is string => id !== null);
+        const playerIds = [...new Set(
+            screens
+                .map((s) => s.vnnoxPlayerId)
+                .filter((id): id is string => id !== null)
+        )];
 
         // Batch player IDs in groups of BATCH_SIZE
         const allStatuses: Array<{ playerId: string; onlineStatus: number; lastOnlineTime?: string }> = [];

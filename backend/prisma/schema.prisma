@@ -27,7 +27,7 @@ model Screen {
   display   Display  @relation(fields: [displayId], references: [id])
 
   // VNNOX player koppeling
-  vnnoxPlayerId     String?   @unique
+  vnnoxPlayerId     String?
   vnnoxPlayerName   String?
   vnnoxOnlineStatus Int?      @default(0)
   vnnoxLastSeen     DateTime?
