@@ -77,8 +77,12 @@ app.use(express.json());
 // Companion API endpoints
 app.use("/api/companion", companionRouter);
 
-// Serve static content (images) - use root content folder for intuitive manual file placement
-const contentPath = path.join(process.cwd(), "..", "content");
+// Serve static content (images) - use CONTENT_PATH env var or default based on environment
+const contentPath = process.env.CONTENT_PATH || (
+    process.env.NODE_ENV === "production"
+        ? path.join(process.cwd(), "content")  // Docker: /app/content
+        : path.join(process.cwd(), "..", "content")  // Local dev: ../content
+);
 
 // Ensure content directory exists on startup
 if (!fs.existsSync(contentPath)) {
