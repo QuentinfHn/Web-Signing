@@ -39,6 +39,74 @@ function MapController({ selectedScreenId, screens }: { selectedScreenId: string
     return null;
 }
 
+// Content preview component - shows current content being sent to the screen
+function ContentPreview({
+    imageSrc,
+    slideshow,
+    isActive
+}: {
+    imageSrc: string | null;
+    slideshow?: { images: string[]; intervalMs: number };
+    isActive: boolean;
+}) {
+    const [currentIndex, setCurrentIndex] = useState(0);
+
+    // Slideshow rotation effect
+    useEffect(() => {
+        if (!slideshow || slideshow.images.length <= 1 || !isActive) {
+            setCurrentIndex(0);
+            return;
+        }
+
+        const interval = setInterval(() => {
+            setCurrentIndex(prev => (prev + 1) % slideshow.images.length);
+        }, slideshow.intervalMs);
+
+        return () => clearInterval(interval);
+    }, [slideshow, isActive]);
+
+    if (!isActive) {
+        return null;
+    }
+
+    // Determine current image: from slideshow or fallback to src
+    let currentImage = imageSrc;
+    if (slideshow && slideshow.images.length > 0) {
+        currentImage = slideshow.images[currentIndex] || imageSrc;
+    }
+
+    if (!currentImage) {
+        return null;
+    }
+
+    // Build full URL for content images
+    const imageUrl = currentImage.startsWith('/content')
+        ? (import.meta.env.VITE_API_URL || '') + currentImage
+        : currentImage;
+
+    return (
+        <div className="screenshotContainer">
+            <div className="screenshotHeader">
+                <span className="screenshotLabel">Live Preview</span>
+                {slideshow && slideshow.images.length > 1 && (
+                    <span style={{ fontSize: '0.7rem', color: '#6b7280' }}>
+                        {currentIndex + 1}/{slideshow.images.length}
+                    </span>
+                )}
+            </div>
+            <img
+                src={imageUrl}
+                alt="Huidige content"
+                className="screenshotImage"
+                onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                }}
+            />
+        </div>
+    );
+}
+
+
 export default function MapOverview() {
     const [screens, setScreens] = useState<Screen[]>([]);
     const [screenStates, setScreenStates] = useState<ScreenState>({});
@@ -128,7 +196,7 @@ export default function MapOverview() {
                                     if (ref) markerRefs.current[screen.id] = ref;
                                 }}
                                 eventHandlers={{
-                                    click: () => setSelectedScreenId(screen.id)
+                                    click: () => setSelectedScreenId(screen.id),
                                 }}
                             >
                                 <Popup>
@@ -161,6 +229,13 @@ export default function MapOverview() {
                                             </p>
                                         )}
                                         {screen.address && <p><strong>Adres:</strong> {screen.address}</p>}
+
+                                        {/* Content preview - shows current image being sent to the screen */}
+                                        <ContentPreview
+                                            imageSrc={screenStates[screen.id]?.src || null}
+                                            slideshow={screenStates[screen.id]?.slideshow}
+                                            isActive={!!screenStates[screen.id]?.scenario}
+                                        />
                                     </div>
                                 </Popup>
                             </Marker>
