@@ -40,8 +40,8 @@ server {
         proxy_cache_bypass $http_upgrade;
     }
 
-    # Proxy content to backend
-    location /content {
+    # Proxy content files to backend (only actual file paths, not the SPA /content route)
+    location ~ ^/content/.+ {
         proxy_pass $backend_upstream;
         proxy_set_header Host $host;
     }
