@@ -144,13 +144,10 @@ export const displayRouter = router({
     delete: protectedProcedure
         .input(z.object({ id: z.string() }))
         .mutation(async ({ input }) => {
-            // Check if display has screens
-            const screenCount = await prisma.screen.count({
+            // Delete all screens belonging to this display first
+            await prisma.screen.deleteMany({
                 where: { displayId: input.id },
             });
-            if (screenCount > 0) {
-                throw new Error(`Kan display niet verwijderen: ${screenCount} scherm(en) gekoppeld`);
-            }
             await prisma.display.delete({ where: { id: input.id } });
             invalidateDisplaysCache();
             invalidateScreensCache(input.id);
