@@ -34,6 +34,7 @@ export default function Display() {
     // Slideshow state per screen
     const [slideshowStates, setSlideshowStates] = useState<Record<string, SlideshowState>>({});
     const slideshowTimersRef = useRef<Record<string, NodeJS.Timeout>>({});
+    const slideshowConfigRef = useRef<Record<string, { images: string[]; intervalMs: number }>>({});
 
     // Load from cache and sync with server on mount
     useEffect(() => {
@@ -74,40 +75,49 @@ export default function Display() {
     }, [displayId]);
 
     const handleStateUpdate = useCallback(async (state: ScreenState) => {
-        const newFading = new Set<string>();
-        const newPrevious: Record<string, string> = { ...previousSrcs };
+        setScreenStates(prev => {
+            const newFading = new Set<string>();
+            const newPrevious: Record<string, string> = {};
 
-        Object.entries(state).forEach(([screenId, screenState]) => {
-            const currentSrc = screenStates[screenId]?.src;
-            const newSrc = screenState.src;
+            Object.entries(state).forEach(([screenId, screenState]) => {
+                const currentSrc = prev[screenId]?.src;
+                const newSrc = screenState.src;
 
-            if (currentSrc && newSrc && currentSrc !== newSrc) {
-                newFading.add(screenId);
-                newPrevious[screenId] = currentSrc;
+                if (currentSrc && newSrc && currentSrc !== newSrc) {
+                    newFading.add(screenId);
+                    newPrevious[screenId] = currentSrc;
+                }
+
+                // Reset slideshow index when scenario changes
+                const currentScenario = prev[screenId]?.scenario;
+                if (currentScenario !== screenState.scenario) {
+                    setSlideshowStates(s => ({
+                        ...s,
+                        [screenId]: { currentIndex: 0, scenario: screenState.scenario }
+                    }));
+                }
+            });
+
+            if (newFading.size > 0) {
+                setPreviousSrcs(p => ({ ...p, ...newPrevious }));
+                setFadingScreens(newFading);
+
+                setTimeout(() => {
+                    setFadingScreens(prev => {
+                        const next = new Set(prev);
+                        newFading.forEach(id => next.delete(id));
+                        return next;
+                    });
+                    setPreviousSrcs(prev => {
+                        const next = { ...prev };
+                        Object.keys(newPrevious).forEach(id => delete next[id]);
+                        return next;
+                    });
+                }, FADE_TIME);
             }
 
-            // Reset slideshow index when scenario changes
-            const currentScenario = screenStates[screenId]?.scenario;
-            const newScenario = screenState.scenario;
-            if (currentScenario !== newScenario) {
-                setSlideshowStates(prev => ({
-                    ...prev,
-                    [screenId]: { currentIndex: 0, scenario: newScenario }
-                }));
-            }
+            return { ...prev, ...state };
         });
-
-        if (newFading.size > 0) {
-            setPreviousSrcs(newPrevious);
-            setFadingScreens(newFading);
-
-            setTimeout(() => {
-                setFadingScreens(new Set());
-                setPreviousSrcs({});
-            }, FADE_TIME);
-        }
-
-        setScreenStates(state);
 
         // Cache state to IndexedDB for offline use
         try {
@@ -115,7 +125,7 @@ export default function Display() {
         } catch (error) {
             console.error('Failed to cache states:', error);
         }
-    }, [displayId, screenStates, previousSrcs]);
+    }, []);
 
     useWebSocket(handleStateUpdate);
 
@@ -140,20 +150,51 @@ export default function Display() {
         };
     }, [displayId]);
 
-    // Slideshow timer management
+    // Slideshow timer management — only reset timers when config actually changes
     useEffect(() => {
-        // Clear all existing timers
-        Object.values(slideshowTimersRef.current).forEach(clearInterval);
-        slideshowTimersRef.current = {};
+        const prevConfig = slideshowConfigRef.current;
+        const nextConfig: Record<string, { images: string[]; intervalMs: number }> = {};
 
-        // Set up timers for screens with slideshows
+        // Build next config from current screenStates
         Object.entries(screenStates).forEach(([screenId, state]) => {
             if (state.slideshow && state.slideshow.images.length > 1 && state.slideshow.intervalMs) {
-                const { images, intervalMs } = state.slideshow;
+                nextConfig[screenId] = {
+                    images: state.slideshow.images,
+                    intervalMs: state.slideshow.intervalMs,
+                };
+            }
+        });
+
+        // Determine which screens need timer changes
+        const allScreenIds = new Set([...Object.keys(prevConfig), ...Object.keys(nextConfig)]);
+
+        allScreenIds.forEach(screenId => {
+            const prev = prevConfig[screenId];
+            const next = nextConfig[screenId];
+
+            const configChanged =
+                !prev !== !next ||
+                (prev && next && (
+                    prev.intervalMs !== next.intervalMs ||
+                    prev.images.length !== next.images.length ||
+                    prev.images.some((img, i) => img !== next.images[i])
+                ));
+
+            if (!configChanged) return;
+
+            // Clear existing timer for this screen
+            if (slideshowTimersRef.current[screenId]) {
+                clearInterval(slideshowTimersRef.current[screenId]);
+                delete slideshowTimersRef.current[screenId];
+            }
+
+            // Set up new timer if config exists
+            if (next) {
+                const { images, intervalMs } = next;
 
                 slideshowTimersRef.current[screenId] = setInterval(() => {
                     setSlideshowStates(prev => {
-                        const current = prev[screenId] || { currentIndex: 0, scenario: state.scenario };
+                        const current = prev[screenId] || { currentIndex: 0, scenario: null };
                         const nextIndex = (current.currentIndex + 1) % images.length;
 
                         // Trigger fade transition
@@ -161,17 +202,17 @@ export default function Display() {
                         const nextImage = images[nextIndex];
 
                         if (currentImage !== nextImage) {
-                            setFadingScreens(prev => new Set(prev).add(screenId));
-                            setPreviousSrcs(prev => ({ ...prev, [screenId]: currentImage }));
+                            setFadingScreens(f => new Set(f).add(screenId));
+                            setPreviousSrcs(p => ({ ...p, [screenId]: currentImage }));
 
                             setTimeout(() => {
-                                setFadingScreens(prev => {
-                                    const next = new Set(prev);
-                                    next.delete(screenId);
-                                    return next;
+                                setFadingScreens(f => {
+                                    const s = new Set(f);
+                                    s.delete(screenId);
+                                    return s;
                                 });
-                                setPreviousSrcs(prev => {
-                                    const { [screenId]: _, ...rest } = prev;
+                                setPreviousSrcs(p => {
+                                    const { [screenId]: _, ...rest } = p;
                                     return rest;
                                 });
                             }, FADE_TIME);
@@ -186,8 +227,11 @@ export default function Display() {
             }
         });
 
+        slideshowConfigRef.current = nextConfig;
+
         return () => {
             Object.values(slideshowTimersRef.current).forEach(clearInterval);
+            slideshowTimersRef.current = {};
         };
     }, [screenStates]);
 
