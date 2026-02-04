@@ -254,6 +254,11 @@
     text-overflow: ellipsis;
 }
 
+.presetScreenRow select {
+    width: auto;
+    flex: 2;
+}
+
 .presetItem {
     display: flex;
     align-items: center;
