@@ -109,6 +109,12 @@ export function useSync(displayId: string): UseSyncResult {
 export function useAutoSync(displayId: string, interval: number = 60000) {
     const { isSyncing, sync } = useSync(displayId);
 
+    // Immediate sync on mount
+    useEffect(() => {
+        sync();
+    }, [displayId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Periodic sync
     useEffect(() => {
         if (isSyncing) return;
 
