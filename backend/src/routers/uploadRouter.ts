@@ -8,11 +8,10 @@ import { requireAuth } from "../middleware/authMiddleware.js";
 import { uploadRateLimiter } from "../middleware/rateLimit.js";
 import { sanitizeFilename, validateFileType, validateFileExtension } from "../utils/fileUtils.js";
 import { ALLOWED_MIME_TYPES } from "../config/upload.js";
+import { contentPath } from "../config/paths.js";
 
 const router = express.Router();
 router.use(uploadRateLimiter);
-
-const contentPath = path.join(process.cwd(), "..", "content");
 
 const upload = multer({
     storage: multer.diskStorage({

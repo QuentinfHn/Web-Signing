@@ -6,6 +6,7 @@ import type { Context } from "./context.js";
 import { invalidateDisplaysCache, invalidateScreensCache, invalidateStateCache, invalidateScenarioCache } from "../services/cache.js";
 import { getScreenStateMap } from "../services/screenState.js";
 import { isVnnoxEnabled, fetchPlayerList, fetchOnlineStatuses } from "../services/vnnox.js";
+import { contentPath } from "../config/paths.js";
 
 const t = initTRPC.context<Context>().create();
 
@@ -561,8 +562,9 @@ export const contentRouter = router({
             // Delete file from disk
             const fs = await import("fs/promises");
             const path = await import("path");
-            // Path in DB is like "/content/..." - resolve to root content folder
-            const filePath = path.join(process.cwd(), "..", content.path);
+            // Path in DB is like "/content/category/file" - resolve relative to contentPath
+            const relativePath = content.path.replace(/^\/content\//, "");
+            const filePath = path.join(contentPath, relativePath);
             try {
                 await fs.unlink(filePath);
             } catch {
@@ -679,8 +681,9 @@ export const contentRouter = router({
             const fs = await import("fs/promises");
             const path = await import("path");
 
-            // Path in DB is like "/content/..." - resolve to root content folder
-            const oldFilePath = path.join(process.cwd(), "..", content.path);
+            // Path in DB is like "/content/category/file" - resolve relative to contentPath
+            const relativePath = content.path.replace(/^\/content\//, "");
+            const oldFilePath = path.join(contentPath, relativePath);
             const dir = path.dirname(oldFilePath);
             const oldDiskFilename = path.basename(content.path);
             const ext = path.extname(oldDiskFilename);
@@ -733,8 +736,9 @@ export const contentRouter = router({
 
         let deleted = 0;
         for (const content of contents) {
-            // Path in DB is like "/content/..." - resolve to root content folder
-            const filePath = path.join(process.cwd(), "..", content.path);
+            // Path in DB is like "/content/category/file" - resolve relative to contentPath
+            const relativePath = content.path.replace(/^\/content\//, "");
+            const filePath = path.join(contentPath, relativePath);
             try {
                 await fs.access(filePath);
             } catch {
@@ -750,7 +754,7 @@ export const contentRouter = router({
     scan: protectedProcedure.mutation(async () => {
         const fs = await import("fs/promises");
         const path = await import("path");
-        const contentDir = path.join(process.cwd(), "..", "content");
+        const contentDir = contentPath;
 
         // MIME type mapping
         const mimeTypes: Record<string, string> = {
