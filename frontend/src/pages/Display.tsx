@@ -76,6 +76,16 @@ export default function Display() {
 
     const handleStateUpdate = useCallback(async (state: ScreenState) => {
         setScreenStates(prev => {
+            // Skip update if nothing actually changed
+            const hasChanges = Object.entries(state).some(([screenId, screenState]) => {
+                const current = prev[screenId];
+                if (!current) return true;
+                return current.src !== screenState.src
+                    || current.scenario !== screenState.scenario
+                    || JSON.stringify(current.slideshow) !== JSON.stringify(screenState.slideshow);
+            });
+            if (!hasChanges) return prev;
+
             const newFading = new Set<string>();
             const newPrevious: Record<string, string> = {};
 
@@ -133,15 +143,18 @@ export default function Display() {
         let mounted = true;
         const unsubscribe = signageCache.onSyncStatusChange((status) => {
             if (!mounted || !status.lastSync) return;
-            signageCache.loadScreens(displayId)
-                .then((cachedScreens) => {
-                    if (mounted) {
-                        setScreens(cachedScreens);
-                    }
-                })
-                .catch((error) => {
-                    console.error('Failed to refresh screens from cache:', error);
-                });
+            Promise.all([
+                signageCache.loadScreens(displayId),
+                signageCache.loadStates()
+            ]).then(([cachedScreens, cachedStates]) => {
+                if (!mounted) return;
+                setScreens(cachedScreens);
+                if (Object.keys(cachedStates).length > 0) {
+                    setScreenStates(prev => ({ ...prev, ...cachedStates }));
+                }
+            }).catch((error) => {
+                console.error('Failed to refresh from cache:', error);
+            });
         });
 
         return () => {
@@ -149,6 +162,14 @@ export default function Display() {
             unsubscribe();
         };
     }, [displayId]);
+
+    // Clean up all slideshow timers on unmount only
+    useEffect(() => {
+        return () => {
+            Object.values(slideshowTimersRef.current).forEach(clearInterval);
+            slideshowTimersRef.current = {};
+        };
+    }, []);
 
     // Slideshow timer management — only reset timers when config actually changes
     useEffect(() => {
@@ -228,11 +249,6 @@ export default function Display() {
         });
 
         slideshowConfigRef.current = nextConfig;
-
-        return () => {
-            Object.values(slideshowTimersRef.current).forEach(clearInterval);
-            slideshowTimersRef.current = {};
-        };
     }, [screenStates]);
 
     // Get current image for a screen (accounting for slideshow)
