@@ -21,7 +21,7 @@ interface ImageSize {
 export default function Display() {
     const { displayId = "display1" } = useParams<{ displayId: string }>();
 
-    // Initialize with empty state, will load from cache
+    // Initialize with empty state; hydrate after a fresh sync
     const [screens, setScreens] = useState<CachedScreen[]>([]);
     const [screenStates, setScreenStates] = useState<ScreenState>({});
     const [previousSrcs, setPreviousSrcs] = useState<Record<string, string>>({});
@@ -36,42 +36,17 @@ export default function Display() {
     const slideshowTimersRef = useRef<Record<string, NodeJS.Timeout>>({});
     const slideshowConfigRef = useRef<Record<string, { images: string[]; intervalMs: number }>>({});
 
-    // Load from cache and sync with server on mount
+    // Initialize cache storage on mount (do not hydrate from cache)
     useEffect(() => {
-        let mounted = true;
-
         const initializeDisplay = async () => {
             try {
                 await signageCache.initialize();
-
-                // Load from IndexedDB cache first
-                const [cachedScreens, cachedStates] = await Promise.all([
-                    signageCache.loadScreens(displayId),
-                    signageCache.loadStates()
-                ]);
-
-                void signageCache.warmContentCache(cachedStates).catch((error) => {
-                    console.error('Failed to warm content cache from IndexedDB:', error);
-                });
-
-                if (mounted) {
-                    if (cachedScreens.length > 0) {
-                        setScreens(cachedScreens);
-                    }
-                    if (Object.keys(cachedStates).length > 0) {
-                        setScreenStates(cachedStates);
-                    }
-                }
             } catch (error) {
-                console.error('Failed to initialize display:', error);
+                console.error('Failed to initialize display cache:', error);
             }
         };
 
-        initializeDisplay();
-
-        return () => {
-            mounted = false;
-        };
+        void initializeDisplay();
     }, [displayId]);
 
     const handleStateUpdate = useCallback(async (state: ScreenState) => {
@@ -143,18 +118,29 @@ export default function Display() {
         let mounted = true;
         const unsubscribe = signageCache.onSyncStatusChange((status) => {
             if (!mounted || !status.lastSync) return;
-            Promise.all([
-                signageCache.loadScreens(displayId),
-                signageCache.loadStates()
-            ]).then(([cachedScreens, cachedStates]) => {
-                if (!mounted) return;
-                setScreens(cachedScreens);
-                if (Object.keys(cachedStates).length > 0) {
-                    setScreenStates(prev => ({ ...prev, ...cachedStates }));
-                }
-            }).catch((error) => {
-                console.error('Failed to refresh from cache:', error);
-            });
+
+            const shouldLoadScreens = status.lastSuccess?.screens === true;
+            const shouldLoadStates = status.lastSuccess?.states === true;
+
+            if (shouldLoadScreens) {
+                signageCache.loadScreens(displayId).then((cachedScreens) => {
+                    if (!mounted) return;
+                    setScreens(cachedScreens);
+                }).catch((error) => {
+                    console.error('Failed to refresh screens from cache:', error);
+                });
+            }
+
+            if (shouldLoadStates) {
+                signageCache.loadStates().then((cachedStates) => {
+                    if (!mounted) return;
+                    if (Object.keys(cachedStates).length > 0) {
+                        setScreenStates(prev => ({ ...prev, ...cachedStates }));
+                    }
+                }).catch((error) => {
+                    console.error('Failed to refresh states from cache:', error);
+                });
+            }
         });
 
         return () => {

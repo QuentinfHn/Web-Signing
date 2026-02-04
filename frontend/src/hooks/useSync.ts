@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { signageCache } from '../lib/signageCache';
+import { signageCache, type SyncStatus } from '../lib/signageCache';
 import { retry, RetryOptions } from '../lib/retry';
 import { trpcClient } from '../utils/trpc';
 import { ScreenState } from '../utils/websocket';
@@ -18,14 +18,15 @@ export interface UseSyncResult {
     lastSync: Date | null;
     lastError: string | null;
     sync: () => Promise<boolean>;
-    syncStatus: { isSyncing: boolean; lastSync: Date | null; lastError: string | null };
+    syncStatus: SyncStatus;
 }
 
 export function useSync(displayId: string): UseSyncResult {
-    const [syncStatus, setSyncStatus] = useState({
+    const [syncStatus, setSyncStatus] = useState<SyncStatus>({
         isSyncing: false,
         lastSync: null as Date | null,
-        lastError: null as string | null
+        lastError: null as string | null,
+        lastSuccess: null
     });
 
     useEffect(() => {

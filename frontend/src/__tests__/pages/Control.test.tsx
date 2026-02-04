@@ -13,7 +13,8 @@ const mockTrpcClient = vi.hoisted(() => ({
   },
   scenarios: {
     getAll: { query: vi.fn() },
-    set: { mutate: vi.fn() },
+    delete: { mutate: vi.fn() },
+    setSlideshow: { mutate: vi.fn() },
   },
   scenarioNames: {
     list: { query: vi.fn() },
@@ -28,6 +29,10 @@ const mockTrpcClient = vi.hoisted(() => ({
   },
   displays: {
     list: { query: vi.fn() },
+  },
+  vnnox: {
+    isEnabled: { query: vi.fn() },
+    getStatuses: { query: vi.fn() },
   },
 }))
 
@@ -85,6 +90,7 @@ describe('Control page', () => {
     vi.mocked(mockTrpcClient.displays.list.query).mockResolvedValue([
       { id: 'display-1', name: 'Display 1', location: 'Room A', _count: { screens: 1 } },
     ])
+    vi.mocked(mockTrpcClient.vnnox.isEnabled.query).mockResolvedValue({ enabled: false })
   })
 
   afterEach(() => {
@@ -116,6 +122,7 @@ describe('Control page', () => {
         expect(mockTrpcClient.content.list.query).toHaveBeenCalled()
         expect(mockTrpcClient.screens.list.query).toHaveBeenCalled()
         expect(mockTrpcClient.displays.list.query).toHaveBeenCalled()
+        expect(mockTrpcClient.vnnox.isEnabled.query).toHaveBeenCalled()
       })
     })
   })
@@ -311,6 +318,10 @@ describe('Control page', () => {
         const settingsButton = screen.getByTitle('Instellingen')
         fireEvent.click(settingsButton)
       })
+      await waitFor(() => {
+        expect(screen.getByText('+ Afbeelding toevoegen')).toBeInTheDocument()
+      })
+      fireEvent.click(screen.getByText('+ Afbeelding toevoegen'))
       await waitFor(() => {
         expect(screen.getByTestId('content-selector')).toBeInTheDocument()
       })

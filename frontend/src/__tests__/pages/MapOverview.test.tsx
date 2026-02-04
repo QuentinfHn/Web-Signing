@@ -2,14 +2,16 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
 import MapOverview from '../../pages/MapOverview'
+import styles from '../../pages/MapOverview.module.css'
 
 // Hoist mocks
 const mockTrpcClient = vi.hoisted(() => ({
   screens: {
     list: { query: vi.fn() },
   },
-  scenarios: {
-    getAll: { query: vi.fn() },
+  vnnox: {
+    isEnabled: { query: vi.fn() },
+    getStatuses: { query: vi.fn() },
   },
 }))
 
@@ -122,15 +124,10 @@ describe('MapOverview page', () => {
     },
   ]
 
-  const mockScenarios = {
-    'screen-1': { 'scenario-1': '/image1.png' },
-    'screen-2': { 'scenario-2': '/image2.png' },
-  }
-
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(mockTrpcClient.screens.list.query).mockResolvedValue(mockScreens as any)
-    vi.mocked(mockTrpcClient.scenarios.getAll.query).mockResolvedValue(mockScenarios)
+    vi.mocked(mockTrpcClient.vnnox.isEnabled.query).mockResolvedValue({ enabled: false })
     vi.mocked(mockUseWebSocket).mockReturnValue({
       connected: true,
       setImage: vi.fn(),
@@ -166,7 +163,7 @@ describe('MapOverview page', () => {
       renderMapOverview()
       await waitFor(() => {
         expect(mockTrpcClient.screens.list.query).toHaveBeenCalled()
-        expect(mockTrpcClient.scenarios.getAll.query).toHaveBeenCalled()
+        expect(mockTrpcClient.vnnox.isEnabled.query).toHaveBeenCalled()
       })
     })
   })
@@ -279,10 +276,10 @@ describe('MapOverview page', () => {
     it('selects screen on sidebar item click', async () => {
       renderMapOverview()
       await waitFor(() => {
-        const sidebarItems = document.querySelectorAll('.sidebar-screen-item')
+        const sidebarItems = document.querySelectorAll(`.${styles.sidebarScreenItem}`)
         expect(sidebarItems.length).toBeGreaterThan(0)
       })
-      const sidebarItems = document.querySelectorAll('.sidebar-screen-item')
+      const sidebarItems = document.querySelectorAll(`.${styles.sidebarScreenItem}`)
       if (sidebarItems.length > 0) {
         fireEvent.click(sidebarItems[0])
       }
@@ -291,11 +288,11 @@ describe('MapOverview page', () => {
     it('highlights selected screen in sidebar', async () => {
       renderMapOverview()
       await waitFor(() => {
-        const sidebarItems = document.querySelectorAll('.sidebar-screen-item')
+        const sidebarItems = document.querySelectorAll(`.${styles.sidebarScreenItem}`)
         expect(sidebarItems.length).toBeGreaterThan(0)
       })
       // Verify sidebar items contain screen names
-      const sidebarItems = document.querySelectorAll('.sidebar-screen-item')
+      const sidebarItems = document.querySelectorAll(`.${styles.sidebarScreenItem}`)
       expect(Array.from(sidebarItems).some(item => item.textContent?.includes('Screen 1'))).toBe(true)
     })
   })
@@ -349,8 +346,8 @@ describe('MapOverview page', () => {
       })
     })
 
-    it('handles empty scenarios', async () => {
-      vi.mocked(mockTrpcClient.scenarios.getAll.query).mockResolvedValue({})
+    it('handles vnnox disabled', async () => {
+      vi.mocked(mockTrpcClient.vnnox.isEnabled.query).mockResolvedValue({ enabled: false })
       renderMapOverview()
       await waitFor(() => {
         expect(screen.getByText('Actieve Schermen')).toBeInTheDocument()
@@ -374,7 +371,7 @@ describe('MapOverview page', () => {
         expect(markers).toHaveLength(2)
       })
       // Screen 3 (null coords) should not appear in sidebar
-      const sidebarItems = document.querySelectorAll('.sidebar-screen-item')
+      const sidebarItems = document.querySelectorAll(`.${styles.sidebarScreenItem}`)
       const hasScreen3 = Array.from(sidebarItems).some(item => item.textContent?.includes('Screen 3'))
       expect(hasScreen3).toBe(false)
     })
@@ -386,7 +383,7 @@ describe('MapOverview page', () => {
         expect(markers).toHaveLength(2)
       })
       // Screen 4 (0,0 coords) should not appear in sidebar
-      const sidebarItems = document.querySelectorAll('.sidebar-screen-item')
+      const sidebarItems = document.querySelectorAll(`.${styles.sidebarScreenItem}`)
       const hasScreen4 = Array.from(sidebarItems).some(item => item.textContent?.includes('Screen 4'))
       expect(hasScreen4).toBe(false)
     })

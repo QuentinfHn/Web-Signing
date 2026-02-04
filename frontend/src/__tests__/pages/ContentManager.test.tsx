@@ -135,8 +135,11 @@ describe('ContentManager page', () => {
 
     it('handles drag over', () => {
       renderContentManager()
-      const uploadZone = screen.getByText('📤 Sleep bestanden hierheen of').closest('.upload-zone')
+      const uploadZone = screen.getByText('📤 Sleep bestanden hierheen of').closest('div')
       expect(uploadZone).toBeInTheDocument()
+      if (uploadZone) {
+        fireEvent.dragOver(uploadZone)
+      }
     })
 
     it('handles drop', async () => {
@@ -146,7 +149,7 @@ describe('ContentManager page', () => {
       } as Response)
 
       renderContentManager()
-      const uploadZone = screen.getByText('📤 Sleep bestanden hierheen of').closest('.upload-zone')
+      const uploadZone = screen.getByText('📤 Sleep bestanden hierheen of').closest('div')
 
       if (uploadZone) {
         fireEvent.drop(uploadZone, {

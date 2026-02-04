@@ -3,7 +3,6 @@ import { render, screen, waitFor, fireEvent, within } from '@testing-library/rea
 import { BrowserRouter } from 'react-router-dom'
 import ScreenEditor from '../../pages/ScreenEditor'
 
-vi.mock('../../utils/trpc')
 const { trpcClient } = await import('../../utils/trpc')
 
 function renderScreenEditor() {
@@ -51,6 +50,7 @@ describe('ScreenEditor page', () => {
     vi.clearAllMocks()
     vi.mocked(trpcClient.displays.list.query).mockResolvedValue(mockDisplays as any)
     vi.mocked(trpcClient.screens.list.query).mockResolvedValue(mockScreens as any)
+    vi.mocked(trpcClient.vnnox.isEnabled.query).mockResolvedValue({ enabled: false })
     global.fetch = vi.fn()
   })
 

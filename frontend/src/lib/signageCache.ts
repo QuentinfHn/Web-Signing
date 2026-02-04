@@ -5,6 +5,11 @@ interface SyncStatus {
     isSyncing: boolean;
     lastSync: Date | null;
     lastError: string | null;
+    lastSuccess: {
+        displays: boolean;
+        screens: boolean;
+        states: boolean;
+    } | null;
 }
 
 interface CachedScreen {
@@ -21,7 +26,8 @@ class SignageCache {
     private syncStatus: SyncStatus = {
         isSyncing: false,
         lastSync: null,
-        lastError: null
+        lastError: null,
+        lastSuccess: null
     };
 
     private syncCallbacks: Set<(status: SyncStatus) => void> = new Set();
@@ -257,12 +263,18 @@ class SignageCache {
         this.syncStatus = {
             isSyncing: true,
             lastSync: null,
-            lastError: null
+            lastError: null,
+            lastSuccess: null
         };
         this.notifySyncStatusChange();
 
         try {
             const failures: string[] = [];
+            const successes = {
+                displays: false,
+                screens: false,
+                states: false
+            };
             const safeFetch = async <T>(label: string, fn: () => Promise<T>): Promise<T | null> => {
                 try {
                     return await fn();
@@ -285,6 +297,7 @@ class SignageCache {
                 try {
                     await this.cacheDisplays(displays);
                     didUpdate = true;
+                    successes.displays = true;
                 } catch (error) {
                     failures.push('displays-cache');
                     console.error('Failed to cache displays:', error);
@@ -295,6 +308,7 @@ class SignageCache {
                 try {
                     await this.cacheScreens(screens, displayId);
                     didUpdate = true;
+                    successes.screens = true;
                 } catch (error) {
                     failures.push('screens-cache');
                     console.error('Failed to cache screens:', error);
@@ -305,6 +319,7 @@ class SignageCache {
                 try {
                     await this.cacheStates(states);
                     didUpdate = true;
+                    successes.states = true;
                 } catch (error) {
                     failures.push('states-cache');
                     console.error('Failed to cache states:', error);
@@ -329,7 +344,8 @@ class SignageCache {
             this.syncStatus = {
                 isSyncing: false,
                 lastSync: didUpdate ? new Date() : null,
-                lastError: failures.length > 0 ? `Sync issues: ${failures.join(', ')}` : null
+                lastError: failures.length > 0 ? `Sync issues: ${failures.join(', ')}` : null,
+                lastSuccess: didUpdate ? successes : null
             };
             this.notifySyncStatusChange();
 
@@ -341,7 +357,8 @@ class SignageCache {
             this.syncStatus = {
                 isSyncing: false,
                 lastSync: null,
-                lastError: errorMessage
+                lastError: errorMessage,
+                lastSuccess: null
             };
             this.notifySyncStatusChange();
 

@@ -170,7 +170,7 @@ describe('useScreens hook', () => {
     const exportData = await result.current.exportScreens()
 
     expect(trpcClient.screens.exportAll.query).toHaveBeenCalled()
-    expect(exportData).toEqual({ screens: mockScreens })
+    expect(exportData?.screens).toEqual(mockScreens)
   })
 
   it('imports screens', async () => {
