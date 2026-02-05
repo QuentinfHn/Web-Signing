@@ -67,29 +67,19 @@ export function useSync(displayId: string): UseSyncResult {
             states: async () => {
                 return await retry(async () => {
                     const states = await trpcClient.state.getAll.query();
-                    const entries = Object.entries(states);
-                    const hasScenario = entries.some(([, state]) =>
-                        Object.prototype.hasOwnProperty.call(state as Record<string, unknown>, "scenario")
-                    );
-                    const cachedStates = !hasScenario && entries.length > 0
-                        ? await signageCache.loadStates()
-                        : null;
                     const stateMap: ScreenState = {};
-                    entries.forEach(([screenId, state]) => {
+                    Object.entries(states).forEach(([screenId, state]) => {
                         const typed = state as {
                             src: string | null;
-                            scenario?: string | null;
+                            scenario: string | null;
                             updated: Date | string;
                             slideshow?: { images: string[]; intervalMs: number };
                         };
-                        const cached = cachedStates?.[screenId];
-                        const scenario = hasScenario ? (typed.scenario ?? null) : (cached?.scenario ?? null);
-                        const slideshow = hasScenario ? typed.slideshow : cached?.slideshow;
                         stateMap[screenId] = {
                             src: typed.src,
-                            scenario,
+                            scenario: typed.scenario ?? null,
                             updated: typed.updated,
-                            slideshow
+                            slideshow: typed.slideshow
                         };
                     });
                     return stateMap;
@@ -143,29 +133,19 @@ export function useAutoSync(displayId: string, interval: number = 60000) {
                 states: async () => {
                     return await retry(async () => {
                         const states = await trpcClient.state.getAll.query();
-                        const entries = Object.entries(states);
-                        const hasScenario = entries.some(([, state]) =>
-                            Object.prototype.hasOwnProperty.call(state as Record<string, unknown>, "scenario")
-                        );
-                        const cachedStates = !hasScenario && entries.length > 0
-                            ? await signageCache.loadStates()
-                            : null;
                         const stateMap: ScreenState = {};
-                        entries.forEach(([screenId, state]) => {
+                        Object.entries(states).forEach(([screenId, state]) => {
                             const typed = state as {
                                 src: string | null;
-                                scenario?: string | null;
+                                scenario: string | null;
                                 updated: Date | string;
                                 slideshow?: { images: string[]; intervalMs: number };
                             };
-                            const cached = cachedStates?.[screenId];
-                            const scenario = hasScenario ? (typed.scenario ?? null) : (cached?.scenario ?? null);
-                            const slideshow = hasScenario ? typed.slideshow : cached?.slideshow;
                             stateMap[screenId] = {
                                 src: typed.src,
-                                scenario,
+                                scenario: typed.scenario ?? null,
                                 updated: typed.updated,
-                                slideshow
+                                slideshow: typed.slideshow
                             };
                         });
                         return stateMap;

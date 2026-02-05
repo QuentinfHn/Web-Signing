@@ -31,6 +31,7 @@ vi.mock('../../lib/signageCache', () => ({
     loadStates: vi.fn().mockResolvedValue({}),
     cacheStates: vi.fn().mockResolvedValue(undefined),
     warmContentCache: vi.fn().mockResolvedValue(undefined),
+    clearAll: vi.fn().mockResolvedValue(undefined),
     syncWithServer: vi.fn().mockResolvedValue(true),
     onSyncStatusChange: vi.fn((cb: (status: SyncStatusLike) => void) => {
       syncStatusCallback = cb
@@ -120,6 +121,7 @@ describe('Display page', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     syncStatusCallback = null
+    globalThis.sessionStorage?.clear()
     vi.mocked(trpcClient.screens.getByDisplay.query).mockResolvedValue(mockScreens as any)
   })
 
@@ -155,7 +157,7 @@ describe('Display page', () => {
       await waitFor(() => {
         expect(signageCache.onSyncStatusChange).toHaveBeenCalled()
       })
-      await triggerSync({ lastSuccess: { screens: true, states: false } })
+      await triggerSync({ lastSuccess: { displays: false, screens: true, states: false } })
 
       await waitFor(() => {
         const screens = document.querySelectorAll(`.${styles.displayScreen}`)
@@ -173,7 +175,7 @@ describe('Display page', () => {
       await waitFor(() => {
         expect(signageCache.onSyncStatusChange).toHaveBeenCalled()
       })
-      await triggerSync({ lastSuccess: { screens: true, states: false } })
+      await triggerSync({ lastSuccess: { displays: false, screens: true, states: false } })
 
       await waitFor(() => {
         const screens = document.querySelectorAll(`.${styles.displayScreen}`)
@@ -231,12 +233,30 @@ describe('Display page', () => {
   })
 
   describe('IndexedDB caching', () => {
-    it('does not load screens from cache on mount', async () => {
+    it('clears caches on reboot (no sessionStorage)', async () => {
       renderDisplay()
 
       await waitFor(() => {
-        expect(signageCache.loadScreens).not.toHaveBeenCalled()
+        expect(signageCache.clearAll).toHaveBeenCalled()
       })
+      expect(signageCache.loadScreens).not.toHaveBeenCalled()
+      expect(globalThis.sessionStorage?.getItem('signage_session_active')).toBe('1')
+    })
+
+    it('hydrates from cache on reload (sessionStorage present)', async () => {
+      globalThis.sessionStorage?.setItem('signage_session_active', '1')
+      vi.mocked(signageCache.loadScreens).mockResolvedValue(mockScreens)
+      vi.mocked(signageCache.loadStates).mockResolvedValue({
+        'screen-1': { src: '/img.png', scenario: null, updated: new Date().toISOString() },
+      })
+
+      renderDisplay()
+
+      await waitFor(() => {
+        expect(signageCache.loadScreens).toHaveBeenCalledWith('display1')
+        expect(signageCache.loadStates).toHaveBeenCalled()
+      })
+      expect(signageCache.clearAll).not.toHaveBeenCalled()
     })
 
     it('loads screens from cache after sync', async () => {
@@ -246,7 +266,7 @@ describe('Display page', () => {
       await waitFor(() => {
         expect(signageCache.onSyncStatusChange).toHaveBeenCalled()
       })
-      await triggerSync({ lastSuccess: { screens: true, states: false } })
+      await triggerSync({ lastSuccess: { displays: false, screens: true, states: false } })
 
       await waitFor(() => {
         expect(signageCache.loadScreens).toHaveBeenCalledWith('display1')
@@ -261,7 +281,7 @@ describe('Display page', () => {
       await waitFor(() => {
         expect(signageCache.onSyncStatusChange).toHaveBeenCalled()
       })
-      await triggerSync({ lastSuccess: { screens: false, states: true } })
+      await triggerSync({ lastSuccess: { displays: false, screens: false, states: true } })
 
       await waitFor(() => {
         expect(signageCache.loadStates).toHaveBeenCalled()
@@ -289,7 +309,7 @@ describe('Display page', () => {
       await waitFor(() => {
         expect(signageCache.onSyncStatusChange).toHaveBeenCalled()
       })
-      await triggerSync({ lastSuccess: { screens: true, states: false } })
+      await triggerSync({ lastSuccess: { displays: false, screens: true, states: false } })
       await waitFor(() => {
         const screens = document.querySelectorAll(`.${styles.displayScreen}`)
         expect(screens).toHaveLength(0)
@@ -303,7 +323,7 @@ describe('Display page', () => {
       await waitFor(() => {
         expect(signageCache.onSyncStatusChange).toHaveBeenCalled()
       })
-      await triggerSync({ lastSuccess: { screens: true, states: false } })
+      await triggerSync({ lastSuccess: { displays: false, screens: true, states: false } })
       await waitFor(() => {
         expect(signageCache.loadScreens).toHaveBeenCalledWith('custom-display')
       })
@@ -321,7 +341,7 @@ describe('Display page', () => {
       await waitFor(() => {
         expect(signageCache.onSyncStatusChange).toHaveBeenCalled()
       })
-      await triggerSync({ lastSuccess: { screens: true, states: false } })
+      await triggerSync({ lastSuccess: { displays: false, screens: true, states: false } })
 
       await waitFor(() => {
         expect(signageCache.loadScreens).toHaveBeenCalledWith('display1')

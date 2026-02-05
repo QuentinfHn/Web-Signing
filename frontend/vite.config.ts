@@ -37,7 +37,7 @@ export default defineConfig({
                             cacheName: "api-responses",
                             expiration: {
                                 maxEntries: 50,
-                                maxAgeSeconds: 60 * 5,
+                                maxAgeSeconds: 60,
                                 purgeOnQuotaError: true,
                             },
                             cacheableResponse: {
@@ -53,7 +53,7 @@ export default defineConfig({
                             cacheName: "api-responses",
                             expiration: {
                                 maxEntries: 50,
-                                maxAgeSeconds: 60 * 5,
+                                maxAgeSeconds: 60,
                                 purgeOnQuotaError: true,
                             },
                             cacheableResponse: {

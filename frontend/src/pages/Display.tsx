@@ -3,9 +3,23 @@ import { useParams } from "react-router-dom";
 import { useWebSocket, ScreenState } from "../utils/websocket";
 import { signageCache, CachedScreen } from "../lib/signageCache";
 import { useAutoSync } from "../hooks/useSync";
+import { withContentVersion } from "../utils/contentUrl";
 import styles from "./Display.module.css";
 
 const FADE_TIME = 500;
+const SESSION_KEY = 'signage_session_active';
+
+const getUpdatedMs = (updated: Date | string | undefined): number => {
+    if (!updated) return 0;
+    if (updated instanceof Date) return updated.getTime();
+    const parsed = Date.parse(updated);
+    return Number.isNaN(parsed) ? 0 : parsed;
+};
+
+const getVersionedSrc = (src: string | null, updated: Date | string | undefined): string | null => {
+    if (!src) return null;
+    return withContentVersion(src, updated);
+};
 
 // Track slideshow state per screen
 interface SlideshowState {
@@ -24,6 +38,7 @@ export default function Display() {
     // Initialize with empty state; hydrate after a fresh sync
     const [screens, setScreens] = useState<CachedScreen[]>([]);
     const [screenStates, setScreenStates] = useState<ScreenState>({});
+    const screenStatesRef = useRef<ScreenState>({});
     const [previousSrcs, setPreviousSrcs] = useState<Record<string, string>>({});
     const [fadingScreens, setFadingScreens] = useState<Set<string>>(new Set());
     const [imageSizes, setImageSizes] = useState<Record<string, ImageSize>>({});
@@ -36,16 +51,44 @@ export default function Display() {
     const slideshowTimersRef = useRef<Record<string, NodeJS.Timeout>>({});
     const slideshowConfigRef = useRef<Record<string, { images: string[]; intervalMs: number }>>({});
 
-    // Initialize cache storage on mount (do not hydrate from cache)
+    useEffect(() => {
+        screenStatesRef.current = screenStates;
+    }, [screenStates]);
+
+    // Initialize cache: reload (sessionStorage present) → hydrate from cache; reboot → clear caches
     useEffect(() => {
         const initializeDisplay = async () => {
             try {
-                await signageCache.initialize();
+                const isExistingSession = sessionStorage.getItem(SESSION_KEY) !== null;
+
+                if (isExistingSession) {
+                    // RELOAD: sessie is actief, cache is warm → direct hydrateren
+                    await signageCache.initialize();
+                    const [cachedScreens, cachedStates] = await Promise.all([
+                        signageCache.loadScreens(displayId),
+                        signageCache.loadStates()
+                    ]);
+                    if (cachedScreens.length > 0) setScreens(cachedScreens);
+                    if (Object.keys(cachedStates).length > 0) {
+                        setScreenStates(prev => ({ ...prev, ...cachedStates }));
+                    }
+                } else {
+                    // REBOOT: verse sessie → alleen content caches wissen
+                    if ('caches' in window) {
+                        const keys = await caches.keys();
+                        const contentCaches = keys.filter(key =>
+                            key === 'content-images' || key === 'api-responses'
+                        );
+                        await Promise.all(contentCaches.map(key => caches.delete(key)));
+                    }
+                    await signageCache.initialize();
+                    await signageCache.clearAll();
+                    sessionStorage.setItem(SESSION_KEY, '1');
+                }
             } catch (error) {
                 console.error('Failed to initialize display cache:', error);
             }
         };
-
         void initializeDisplay();
     }, [displayId]);
 
@@ -55,9 +98,11 @@ export default function Display() {
             const hasChanges = Object.entries(state).some(([screenId, screenState]) => {
                 const current = prev[screenId];
                 if (!current) return true;
+                const updatedChanged = getUpdatedMs(current.updated) !== getUpdatedMs(screenState.updated);
                 return current.src !== screenState.src
                     || current.scenario !== screenState.scenario
-                    || JSON.stringify(current.slideshow) !== JSON.stringify(screenState.slideshow);
+                    || JSON.stringify(current.slideshow) !== JSON.stringify(screenState.slideshow)
+                    || updatedChanged;
             });
             if (!hasChanges) return prev;
 
@@ -65,12 +110,19 @@ export default function Display() {
             const newPrevious: Record<string, string> = {};
 
             Object.entries(state).forEach(([screenId, screenState]) => {
-                const currentSrc = prev[screenId]?.src;
+                const currentState = prev[screenId];
+                const currentSrc = currentState?.src;
                 const newSrc = screenState.src;
+                const currentDisplaySrc = currentSrc
+                    ? getVersionedSrc(currentSrc, currentState?.updated)
+                    : null;
+                const nextDisplaySrc = newSrc
+                    ? getVersionedSrc(newSrc, screenState.updated)
+                    : null;
 
-                if (currentSrc && newSrc && currentSrc !== newSrc) {
+                if (currentDisplaySrc && nextDisplaySrc && currentDisplaySrc !== nextDisplaySrc) {
                     newFading.add(screenId);
-                    newPrevious[screenId] = currentSrc;
+                    newPrevious[screenId] = currentDisplaySrc;
                 }
 
                 // Reset slideshow index when scenario changes
@@ -205,10 +257,15 @@ export default function Display() {
                         const nextIndex = (current.currentIndex + 1) % images.length;
 
                         // Trigger fade transition
-                        const currentImage = images[current.currentIndex];
-                        const nextImage = images[nextIndex];
+                        const updated = screenStatesRef.current[screenId]?.updated;
+                        const currentImage = images[current.currentIndex]
+                            ? getVersionedSrc(images[current.currentIndex], updated)
+                            : null;
+                        const nextImage = images[nextIndex]
+                            ? getVersionedSrc(images[nextIndex], updated)
+                            : null;
 
-                        if (currentImage !== nextImage) {
+                        if (currentImage && nextImage && currentImage !== nextImage) {
                             setFadingScreens(f => new Set(f).add(screenId));
                             setPreviousSrcs(p => ({ ...p, [screenId]: currentImage }));
 
@@ -245,10 +302,11 @@ export default function Display() {
         if (state.slideshow && state.slideshow.images.length > 0) {
             const slideshowState = slideshowStates[screenId];
             const index = slideshowState?.currentIndex ?? 0;
-            return state.slideshow.images[index] || state.src;
+            const current = state.slideshow.images[index] || state.src;
+            return current ? getVersionedSrc(current, state.updated) : null;
         }
 
-        return state.src;
+        return state.src ? getVersionedSrc(state.src, state.updated) : null;
     };
 
     // Preload next slideshow images
@@ -263,7 +321,7 @@ export default function Display() {
                 // Preload next image
                 if (nextImage) {
                     const img = new Image();
-                    img.src = nextImage;
+                    img.src = getVersionedSrc(nextImage, state.updated) || nextImage;
                 }
             }
         });

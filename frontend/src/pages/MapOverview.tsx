@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import { trpcClient, Screen } from "../utils/trpc";
 import { useWebSocket, ScreenState, VnnoxStatusData } from "../utils/websocket";
+import { buildContentUrl } from "../utils/contentUrl";
 import "leaflet/dist/leaflet.css";
 import styles from "./MapOverview.module.css";
 import buttonStyles from "../components/Button.module.css";
@@ -43,11 +44,13 @@ function MapController({ selectedScreenId, screens }: { selectedScreenId: string
 function ContentPreview({
     imageSrc,
     slideshow,
-    isActive
+    isActive,
+    updated
 }: {
     imageSrc: string | null;
     slideshow?: { images: string[]; intervalMs: number };
     isActive: boolean;
+    updated?: Date | string | null;
 }) {
     const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -79,10 +82,10 @@ function ContentPreview({
         return null;
     }
 
-    // Build full URL for content images
-    const imageUrl = currentImage.startsWith('/content')
-        ? (import.meta.env.VITE_API_URL || '') + currentImage
-        : currentImage;
+    const imageUrl = buildContentUrl(currentImage, updated, import.meta.env.VITE_API_URL);
+    if (!imageUrl) {
+        return null;
+    }
 
     return (
         <div className="screenshotContainer">
@@ -235,6 +238,7 @@ export default function MapOverview() {
                                             imageSrc={screenStates[screen.id]?.src || null}
                                             slideshow={screenStates[screen.id]?.slideshow}
                                             isActive={!!screenStates[screen.id]?.scenario}
+                                            updated={screenStates[screen.id]?.updated ?? null}
                                         />
                                     </div>
                                 </Popup>

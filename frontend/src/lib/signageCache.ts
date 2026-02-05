@@ -1,5 +1,6 @@
 import { cacheDB, CacheDisplay, CacheScreen, CacheState } from './cacheDB';
 import { ScreenState } from '../utils/websocket';
+import { withContentVersion } from '../utils/contentUrl';
 
 interface SyncStatus {
     isSyncing: boolean;
@@ -114,10 +115,12 @@ class SignageCache {
 
         Object.values(states).forEach((state) => {
             if (state.src) {
-                urls.push(state.src);
+                urls.push(withContentVersion(state.src, state.updated));
             }
             if (state.slideshow?.images?.length) {
-                urls.push(...state.slideshow.images);
+                urls.push(
+                    ...state.slideshow.images.map((image) => withContentVersion(image, state.updated))
+                );
             }
         });
 
@@ -226,21 +229,29 @@ class SignageCache {
 
     async cacheStates(states: ScreenState): Promise<void> {
         try {
-            const cacheStates: Record<string, CacheState> = {};
+            const existingStates = await cacheDB.getAllStates();
+            const statesToWrite: Record<string, CacheState> = {};
 
             Object.entries(states).forEach(([screenId, state]) => {
-                cacheStates[screenId] = {
-                    screenId,
-                    src: state.src,
-                    scenario: state.scenario,
-                    updated: state.updated instanceof Date ? state.updated.toISOString() : state.updated as string,
-                    slideshow: state.slideshow
-                };
+                const incomingUpdated = new Date(state.updated).getTime();
+                const existing = existingStates[screenId];
+                const existingUpdated = existing ? new Date(existing.updated).getTime() : 0;
+
+                if (incomingUpdated >= existingUpdated) {
+                    statesToWrite[screenId] = {
+                        screenId,
+                        src: state.src,
+                        scenario: state.scenario,
+                        updated: state.updated instanceof Date ? state.updated.toISOString() : state.updated as string,
+                        slideshow: state.slideshow
+                    };
+                }
             });
 
-            await cacheDB.putStates(cacheStates);
+            if (Object.keys(statesToWrite).length > 0) {
+                await cacheDB.putStates(statesToWrite);
+            }
 
-            // Warm the Service Worker cache for offline playback.
             void this.warmContentCache(states).catch((error) => {
                 console.error('Failed to warm content cache:', error);
             });
