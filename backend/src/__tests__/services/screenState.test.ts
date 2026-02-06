@@ -1,15 +1,19 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { WebSocketServer, WebSocket } from 'ws'
 
-const mockPrisma = vi.hoisted(() => ({
-  screenState: {
-    findMany: vi.fn(),
-  },
+const mockCache = vi.hoisted(() => ({
+  getAllCachedScreenStates: vi.fn(),
+  getCachedScenario: vi.fn(),
 }))
 
 vi.mock('ws')
-vi.mock('../../prisma/client', () => ({
-  prisma: mockPrisma,
+vi.mock('../../services/cache.js', () => ({
+  getAllCachedScreenStates: mockCache.getAllCachedScreenStates,
+  getCachedScenario: mockCache.getCachedScenario,
+}))
+vi.mock('../../services/cache', () => ({
+  getAllCachedScreenStates: mockCache.getAllCachedScreenStates,
+  getCachedScenario: mockCache.getCachedScenario,
 }))
 
 import { setWebSocketServer, broadcastState, type ScreenStateMap } from '../../services/screenState'
@@ -63,7 +67,8 @@ describe('screenState service', () => {
 
   describe('broadcastState', () => {
     beforeEach(() => {
-      vi.mocked(mockPrisma.screenState.findMany).mockResolvedValue([])
+      vi.mocked(mockCache.getAllCachedScreenStates).mockResolvedValue([])
+      vi.mocked(mockCache.getCachedScenario).mockResolvedValue(null)
       vi.spyOn(mockClient, 'send').mockImplementation(() => { })
     })
 
@@ -74,7 +79,7 @@ describe('screenState service', () => {
     })
 
     it('sends correct payload structure', async () => {
-      vi.mocked(mockPrisma.screenState.findMany).mockResolvedValue([
+      vi.mocked(mockCache.getAllCachedScreenStates).mockResolvedValue([
         {
           id: '1',
           screenId: 'screen-1',
@@ -98,7 +103,7 @@ describe('screenState service', () => {
     it('creates correct ScreenStateMap from database', async () => {
       const mockDate = new Date('2024-01-01T00:00:00.000Z')
 
-      vi.mocked(mockPrisma.screenState.findMany).mockResolvedValue([
+      vi.mocked(mockCache.getAllCachedScreenStates).mockResolvedValue([
         {
           id: '1',
           screenId: 'screen-1',
@@ -137,7 +142,7 @@ describe('screenState service', () => {
     })
 
     it('handles null imageSrc and scenario', async () => {
-      vi.mocked(mockPrisma.screenState.findMany).mockResolvedValue([
+      vi.mocked(mockCache.getAllCachedScreenStates).mockResolvedValue([
         {
           id: '1',
           screenId: 'screen-1',
@@ -157,7 +162,7 @@ describe('screenState service', () => {
       expect(screens['screen-1']).toEqual({
         src: null,
         scenario: null,
-        updated: expect.any(String),
+        updated: expect.stringMatching(/.+/),
       })
     })
 
@@ -200,7 +205,7 @@ describe('screenState service', () => {
     })
 
     it('handles empty state list', async () => {
-      vi.mocked(mockPrisma.screenState.findMany).mockResolvedValue([])
+      vi.mocked(mockCache.getAllCachedScreenStates).mockResolvedValue([])
 
       await broadcastState()
 
@@ -211,7 +216,7 @@ describe('screenState service', () => {
     })
 
     it('logs warning when WebSocket server is not initialized', async () => {
-      setWebSocketServer(null as any)
+      setWebSocketServer(null as unknown as WebSocketServer)
 
       const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { })
 
@@ -225,7 +230,7 @@ describe('screenState service', () => {
     })
 
     it('does not send when server is not initialized', async () => {
-      setWebSocketServer(null as any)
+      setWebSocketServer(null as unknown as WebSocketServer)
 
       vi.mocked(mockClient.send).mockClear()
 
@@ -235,7 +240,7 @@ describe('screenState service', () => {
     })
 
     it('sends JSON-serializable payload', async () => {
-      vi.mocked(mockPrisma.screenState.findMany).mockResolvedValue([])
+      vi.mocked(mockCache.getAllCachedScreenStates).mockResolvedValue([])
 
       await broadcastState()
 
@@ -247,7 +252,7 @@ describe('screenState service', () => {
     it('includes all required fields in state map', async () => {
       const mockDate = new Date('2024-01-01T00:00:00.000Z')
 
-      vi.mocked(mockPrisma.screenState.findMany).mockResolvedValue([
+      vi.mocked(mockCache.getAllCachedScreenStates).mockResolvedValue([
         {
           id: '1',
           screenId: 'screen-1',
@@ -270,7 +275,7 @@ describe('screenState service', () => {
     })
 
     it('handles database errors gracefully', async () => {
-      vi.mocked(mockPrisma.screenState.findMany).mockRejectedValue(new Error('Database error'))
+      vi.mocked(mockCache.getAllCachedScreenStates).mockRejectedValue(new Error('Database error'))
 
       await expect(broadcastState()).rejects.toThrow('Database error')
     })

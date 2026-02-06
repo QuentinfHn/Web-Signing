@@ -2,9 +2,7 @@ import express from "express";
 import { createServer } from "http";
 import { WebSocketServer } from "ws";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import path from "path";
 import fs from "fs";
-import { fileURLToPath } from "url";
 import { appRouter } from "./trpc/router.js";
 import { createContext } from "./trpc/context.js";
 import { createWebSocketHandler } from "./websocket/handler.js";
@@ -16,9 +14,6 @@ import uploadRouter from "./routers/uploadRouter.js";
 import { contentPath } from "./config/paths.js";
 import { startVnnoxPoller, setStatusChangeCallback } from "./services/vnnoxPoller.js";
 import { broadcastVnnoxStatus } from "./services/screenState.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const app = express();
 const server = createServer(app);

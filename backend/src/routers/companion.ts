@@ -10,6 +10,49 @@ import { isVnnoxEnabled } from "../services/vnnox.js";
 const router = express.Router();
 router.use(companionRateLimiter);
 
+async function validateScenarios(scenarios: Record<string, unknown>): Promise<string | null> {
+    const entries = Object.entries(scenarios);
+
+    // All values must be strings
+    for (const [screenId, scenarioName] of entries) {
+        if (typeof scenarioName !== "string") {
+            return `Invalid scenario value for screen "${screenId}": must be a string`;
+        }
+    }
+
+    if (entries.length === 0) {
+        return null;
+    }
+
+    const screenIds = entries.map(([id]) => id);
+    const scenarioNames = entries.map(([, name]) => name as string);
+
+    // Validate all screenIds exist
+    const existingScreens = await prisma.screen.findMany({
+        where: { id: { in: screenIds } },
+        select: { id: true },
+    });
+    const existingScreenIds = new Set(existingScreens.map((s) => s.id));
+    const invalidScreenIds = screenIds.filter((id) => !existingScreenIds.has(id));
+    if (invalidScreenIds.length > 0) {
+        return `Invalid screen IDs: ${invalidScreenIds.join(", ")}`;
+    }
+
+    // Validate all scenarioNames exist
+    const uniqueNames = [...new Set(scenarioNames)];
+    const existingScenarios = await prisma.scenario.findMany({
+        where: { name: { in: uniqueNames } },
+        select: { name: true },
+    });
+    const existingScenarioNames = new Set(existingScenarios.map((s) => s.name));
+    const invalidScenarioNames = uniqueNames.filter((n) => !existingScenarioNames.has(n));
+    if (invalidScenarioNames.length > 0) {
+        return `Invalid scenario names: ${invalidScenarioNames.join(", ")}`;
+    }
+
+    return null;
+}
+
 function requireCompanionAuth(req: express.Request, res: express.Response, next: express.NextFunction) {
     // Authentication is always required - ADMIN_PASSWORD must be set at startup
     const apiKey = Array.isArray(req.headers["x-api-key"]) ? req.headers["x-api-key"][0] : req.headers["x-api-key"];
@@ -135,6 +178,12 @@ router.post("/presets", requireCompanionAuth, async (req, res) => {
             return;
         }
 
+        const validationError = await validateScenarios(scenarios);
+        if (validationError) {
+            res.status(400).json({ error: validationError });
+            return;
+        }
+
         const preset = await prisma.preset.create({
             data: {
                 name: name.trim(),
@@ -180,6 +229,13 @@ router.put("/presets/:id", requireCompanionAuth, async (req, res) => {
                 res.status(400).json({ error: "scenarios must be an object" });
                 return;
             }
+
+            const validationError = await validateScenarios(scenarios);
+            if (validationError) {
+                res.status(400).json({ error: validationError });
+                return;
+            }
+
             data.scenarios = JSON.stringify(scenarios);
         }
 
@@ -304,8 +360,8 @@ router.post("/screens/:id/content", requireCompanionAuth, async (req, res) => {
 
         await prisma.screenState.upsert({
             where: { screenId },
-            update: { imageSrc },
-            create: { screenId, imageSrc },
+            update: { imageSrc, scenario: null },
+            create: { screenId, imageSrc, scenario: null },
         });
 
         invalidateStateCache();
@@ -408,7 +464,10 @@ router.post("/presets/trigger", requireCompanionAuth, async (req, res) => {
             return;
         }
 
-        // For each screenId/scenarioName, look up the ScenarioAssignment to get imagePath
+        // Collect all assignment lookups first
+        const updates: { screenId: string; imagePath: string; scenarioName: string }[] = [];
+        const skipped: string[] = [];
+
         for (const [screenId, scenarioName] of Object.entries(scenarios)) {
             const assignment = await prisma.scenarioAssignment.findUnique({
                 where: {
@@ -420,17 +479,27 @@ router.post("/presets/trigger", requireCompanionAuth, async (req, res) => {
             });
 
             if (assignment) {
-                await prisma.screenState.upsert({
-                    where: { screenId },
-                    update: { imageSrc: assignment.imagePath },
-                    create: { screenId, imageSrc: assignment.imagePath },
-                });
+                updates.push({ screenId, imagePath: assignment.imagePath, scenarioName });
+            } else {
+                skipped.push(screenId);
+                logger.warn(`Preset trigger: no assignment found for screen ${screenId} / scenario ${scenarioName}`);
             }
         }
 
+        // Execute all upserts atomically
+        await prisma.$transaction(
+            updates.map(({ screenId, imagePath, scenarioName }) =>
+                prisma.screenState.upsert({
+                    where: { screenId },
+                    update: { imageSrc: imagePath, scenario: scenarioName },
+                    create: { screenId, imageSrc: imagePath, scenario: scenarioName },
+                })
+            )
+        );
+
         invalidateStateCache();
         await broadcastState();
-        res.json({ success: true });
+        res.json({ success: true, activated: updates.length, skipped: skipped.length });
     } catch (error) {
         logger.error("Error triggering preset:", error);
         res.status(500).json({ error: "Failed to trigger preset" });

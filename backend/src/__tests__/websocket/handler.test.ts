@@ -20,12 +20,13 @@ vi.mock('../../services/screenState', () => ({
 import { createWebSocketHandler } from '../../websocket/handler'
 import { setWebSocketServer, broadcastState, type ScreenStateMap } from '../../services/screenState'
 
+type ExtendedWebSocket = WebSocket & { isAlive?: boolean }
+
 // Skip this test suite for now - it requires complex mocking of WebSocket and fake timers
 // that causes infinite loops with Vitest. Needs refactoring to properly mock ws module.
 describe.skip('websocket handler', () => {
   let wss: WebSocketServer
   let mockClient: WebSocket
-  let pingInterval: NodeJS.Timeout | null = null
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -43,7 +44,6 @@ describe.skip('websocket handler', () => {
 
   afterEach(() => {
     vi.useRealTimers()
-    if (pingInterval) clearInterval(pingInterval)
     wss.close()
     mockClient.close()
     vi.restoreAllMocks()
@@ -126,7 +126,7 @@ describe.skip('websocket handler', () => {
     })
 
     it('terminates dead connections', () => {
-      const extWs = mockClient as any
+      const extWs = mockClient as ExtendedWebSocket
       extWs.isAlive = false
 
       createWebSocketHandler(wss)
@@ -140,7 +140,7 @@ describe.skip('websocket handler', () => {
     })
 
     it('logs termination of dead connections', () => {
-      const extWs = mockClient as any
+      const extWs = mockClient as ExtendedWebSocket
       extWs.isAlive = false
 
       createWebSocketHandler(wss)
@@ -157,7 +157,7 @@ describe.skip('websocket handler', () => {
   describe('message handling', () => {
     beforeEach(() => {
       mockPrisma.screenState.findMany.mockResolvedValue([])
-      mockPrisma.screenState.upsert.mockResolvedValue({} as any)
+      mockPrisma.screenState.upsert.mockResolvedValue({} as unknown)
     })
 
     it('handles setImage message type', async () => {

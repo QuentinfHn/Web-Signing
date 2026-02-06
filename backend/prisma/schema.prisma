@@ -32,6 +32,10 @@ model Screen {
   vnnoxOnlineStatus Int?      @default(0)
   vnnoxLastSeen     DateTime?
 
+  // Inverse relations
+  screenState          ScreenState?
+  scenarioAssignments  ScenarioAssignment[]
+
   @@index([displayId])
   @@index([vnnoxPlayerId])
 }
@@ -49,6 +53,7 @@ model ScreenState {
   imageSrc  String?
   scenario  String?
   updatedAt DateTime @updatedAt
+  screen    Screen   @relation(fields: [screenId], references: [id], onDelete: Cascade)
 }
 
 model Content {
@@ -66,15 +71,18 @@ model Content {
 }
 
 model ScenarioAssignment {
-  id         String           @id @default(cuid())
-  screenId   String
-  scenario   String           // References Scenario.name
-  imagePath  String           // First image (backward compatible)
-  intervalMs Int?             // Null = single image mode, otherwise slideshow interval in ms
-  images     SlideshowImage[]
+  id              String           @id @default(cuid())
+  screenId        String
+  scenario        String           // References Scenario.name
+  imagePath       String           // First image (backward compatible)
+  intervalMs      Int?             // Null = single image mode, otherwise slideshow interval in ms
+  images          SlideshowImage[]
+  screen          Screen           @relation(fields: [screenId], references: [id], onDelete: Cascade)
+  scenarioRef     Scenario         @relation(fields: [scenario], references: [name], onDelete: Cascade)
 
   @@unique([screenId, scenario])
   @@index([screenId])
+  @@index([scenario])
 }
 
 model SlideshowImage {
@@ -88,7 +96,8 @@ model SlideshowImage {
 }
 
 model Scenario {
-  id           String @id @default(cuid())
-  name         String @unique
-  displayOrder Int    @default(0)
+  id           String               @id @default(cuid())
+  name         String               @unique
+  displayOrder Int                  @default(0)
+  assignments  ScenarioAssignment[]
 }

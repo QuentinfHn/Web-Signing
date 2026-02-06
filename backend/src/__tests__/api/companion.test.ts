@@ -29,19 +29,57 @@ const mockPrisma = vi.hoisted(() => ({
   screenState: {
     upsert: vi.fn(),
   },
+  $transaction: vi.fn(),
 }))
 
+// Mock both extensionless and .js paths because runtime imports use .js specifiers.
+vi.mock('../../prisma/client.js', () => ({
+  prisma: mockPrisma,
+}))
 vi.mock('../../prisma/client', () => ({
   prisma: mockPrisma,
 }))
+vi.mock('../../services/screenState.js', () => ({
+  broadcastState: vi.fn(),
+}))
 vi.mock('../../services/screenState', () => ({
   broadcastState: vi.fn(),
+}))
+vi.mock('../../services/cache.js', () => ({
+  invalidateStateCache: vi.fn(),
+}))
+vi.mock('../../services/cache', () => ({
+  invalidateStateCache: vi.fn(),
+}))
+vi.mock('../../auth/auth.js', () => ({
+  verifyToken: vi.fn(() => ({ authenticated: true })),
+  verifyPassword: vi.fn(() => true),
+  isAuthEnabled: vi.fn(() => false),
+  generateToken: vi.fn(() => 'mock-token'),
 }))
 vi.mock('../../auth/auth', () => ({
   verifyToken: vi.fn(() => ({ authenticated: true })),
   verifyPassword: vi.fn(() => true),
   isAuthEnabled: vi.fn(() => false),
   generateToken: vi.fn(() => 'mock-token'),
+}))
+vi.mock('../../middleware/rateLimit.js', () => ({
+  companionRateLimiter: vi.fn((_req: unknown, _res: unknown, next: () => void) => next()),
+}))
+vi.mock('../../middleware/rateLimit', () => ({
+  companionRateLimiter: vi.fn((_req: unknown, _res: unknown, next: () => void) => next()),
+}))
+vi.mock('../../services/vnnox.js', () => ({
+  isVnnoxEnabled: vi.fn(() => false),
+}))
+vi.mock('../../services/vnnox', () => ({
+  isVnnoxEnabled: vi.fn(() => false),
+}))
+vi.mock('../../utils/logger.js', () => ({
+  logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
+}))
+vi.mock('../../utils/logger', () => ({
+  logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
 }))
 
 import companionRouter from '../../routers/companion'
@@ -51,13 +89,19 @@ describe('companion router', () => {
   let app: express.Application
 
   beforeEach(() => {
+    process.env.ADMIN_PASSWORD = 'test-password'
     app = express()
     app.use(express.json())
+    app.use((req, _res, next) => {
+      req.headers['x-api-key'] = 'test-password'
+      next()
+    })
     app.use('/companion', companionRouter)
     vi.clearAllMocks()
   })
 
   afterEach(() => {
+    delete process.env.ADMIN_PASSWORD
     vi.resetAllMocks()
   })
 
@@ -68,7 +112,7 @@ describe('companion router', () => {
         { id: '2', name: 'Display 2', location: 'Room B', _count: { screens: 2 } },
       ]
 
-      vi.mocked(mockPrisma.display.findMany).mockResolvedValue(mockDisplays as any)
+      vi.mocked(mockPrisma.display.findMany).mockResolvedValue(mockDisplays as unknown)
 
       const response = await request(app).get('/companion/displays')
 
@@ -106,14 +150,14 @@ describe('companion router', () => {
         { id: '2', name: 'Screen 2', displayId: 'display-1' },
       ]
 
-      vi.mocked(mockPrisma.screen.findMany).mockResolvedValue(mockScreens as any)
+      vi.mocked(mockPrisma.screen.findMany).mockResolvedValue(mockScreens as unknown)
 
       const response = await request(app).get('/companion/screens')
 
       expect(response.status).toBe(200)
       expect(response.body).toEqual(mockScreens)
       expect(mockPrisma.screen.findMany).toHaveBeenCalledWith({
-        orderBy: { id: 'asc' },
+        orderBy: { name: 'asc' },
         select: { id: true, name: true, displayId: true },
       })
     })
@@ -139,8 +183,8 @@ describe('companion router', () => {
         { screenId: 'screen-2', scenario: 'Scenario 1' },
       ]
 
-      vi.mocked(mockPrisma.scenario.findMany).mockResolvedValue(mockScenarios as any)
-      vi.mocked(mockPrisma.scenarioAssignment.findMany).mockResolvedValue(mockAssignments as any)
+      vi.mocked(mockPrisma.scenario.findMany).mockResolvedValue(mockScenarios as unknown)
+      vi.mocked(mockPrisma.scenarioAssignment.findMany).mockResolvedValue(mockAssignments as unknown)
 
       const response = await request(app).get('/companion/scenarios')
 
@@ -160,8 +204,8 @@ describe('companion router', () => {
         { screenId: 'screen-1', scenario: 'Scenario 1' },
       ]
 
-      vi.mocked(mockPrisma.scenario.findMany).mockResolvedValue(mockScenarios as any)
-      vi.mocked(mockPrisma.scenarioAssignment.findMany).mockResolvedValue(mockAssignments as any)
+      vi.mocked(mockPrisma.scenario.findMany).mockResolvedValue(mockScenarios as unknown)
+      vi.mocked(mockPrisma.scenarioAssignment.findMany).mockResolvedValue(mockAssignments as unknown)
 
       const response = await request(app).get('/companion/scenarios?configured=true')
 
@@ -188,7 +232,7 @@ describe('companion router', () => {
         { id: '2', name: 'Preset 2', scenarios: '{}', createdAt: new Date() },
       ]
 
-      vi.mocked(mockPrisma.preset.findMany).mockResolvedValue(mockPresets as any)
+      vi.mocked(mockPrisma.preset.findMany).mockResolvedValue(mockPresets as unknown)
 
       const response = await request(app).get('/companion/presets')
 
@@ -210,7 +254,7 @@ describe('companion router', () => {
         { id: '1', name: 'Preset 1', scenarios: 'invalid json', createdAt: new Date() },
       ]
 
-      vi.mocked(mockPrisma.preset.findMany).mockResolvedValue(mockPresets as any)
+      vi.mocked(mockPrisma.preset.findMany).mockResolvedValue(mockPresets as unknown)
 
       const response = await request(app).get('/companion/presets')
 
@@ -236,7 +280,7 @@ describe('companion router', () => {
         ...newPreset,
         scenarios: '{}',
         createdAt: new Date(),
-      } as any)
+      } as unknown)
 
       const response = await request(app)
         .post('/companion/presets')
@@ -258,7 +302,7 @@ describe('companion router', () => {
         name: 'Preset',
         scenarios: '{}',
         createdAt: new Date(),
-      } as any)
+      } as unknown)
 
       await request(app)
         .post('/companion/presets')
@@ -304,6 +348,46 @@ describe('companion router', () => {
       expect(response.body).toEqual({ error: 'scenarios object is required' })
     })
 
+    it('returns 400 when scenario references invalid screenId', async () => {
+      vi.mocked(mockPrisma.screen.findMany).mockResolvedValue([])
+
+      const response = await request(app)
+        .post('/companion/presets')
+        .send({ name: 'Test', scenarios: { 'nonexistent-screen': 'scenario-1' } })
+
+      expect(response.status).toBe(400)
+      expect(response.body.error).toContain('Invalid screen IDs')
+      expect(response.body.error).toContain('nonexistent-screen')
+    })
+
+    it('returns 400 when scenario references invalid scenarioName', async () => {
+      vi.mocked(mockPrisma.screen.findMany).mockResolvedValue([{ id: 'screen-1' }] as unknown)
+      vi.mocked(mockPrisma.scenario.findMany).mockResolvedValue([])
+
+      const response = await request(app)
+        .post('/companion/presets')
+        .send({ name: 'Test', scenarios: { 'screen-1': 'nonexistent-scenario' } })
+
+      expect(response.status).toBe(400)
+      expect(response.body.error).toContain('Invalid scenario names')
+      expect(response.body.error).toContain('nonexistent-scenario')
+    })
+
+    it('allows empty scenarios object', async () => {
+      vi.mocked(mockPrisma.preset.create).mockResolvedValue({
+        id: '1',
+        name: 'Test',
+        scenarios: '{}',
+        createdAt: new Date(),
+      } as unknown)
+
+      const response = await request(app)
+        .post('/companion/presets')
+        .send({ name: 'Test', scenarios: {} })
+
+      expect(response.status).toBe(201)
+    })
+
     it('handles database errors', async () => {
       vi.mocked(mockPrisma.preset.create).mockRejectedValue(new Error('Database error'))
 
@@ -321,12 +405,12 @@ describe('companion router', () => {
       const existingPreset = { id: '1', name: 'Old Name', scenarios: '{}' }
       const updatedPreset = { id: '1', name: 'New Name', scenarios: {} }
 
-      vi.mocked(mockPrisma.preset.findUnique).mockResolvedValue(existingPreset as any)
+      vi.mocked(mockPrisma.preset.findUnique).mockResolvedValue(existingPreset as unknown)
       vi.mocked(mockPrisma.preset.update).mockResolvedValue({
         ...updatedPreset,
         scenarios: '{}',
         createdAt: new Date(),
-      } as any)
+      } as unknown)
 
       const response = await request(app)
         .put('/companion/presets/1')
@@ -350,12 +434,12 @@ describe('companion router', () => {
     it('updates only name when scenarios not provided', async () => {
       const existingPreset = { id: '1', name: 'Old Name', scenarios: '{}' }
 
-      vi.mocked(mockPrisma.preset.findUnique).mockResolvedValue(existingPreset as any)
+      vi.mocked(mockPrisma.preset.findUnique).mockResolvedValue(existingPreset as unknown)
       vi.mocked(mockPrisma.preset.update).mockResolvedValue({
         ...existingPreset,
         name: 'New Name',
         createdAt: new Date(),
-      } as any)
+      } as unknown)
 
       await request(app).put('/companion/presets/1').send({ name: 'New Name' })
 
@@ -368,8 +452,10 @@ describe('companion router', () => {
     it('updates only scenarios when name not provided', async () => {
       const existingPreset = { id: '1', name: 'Test', scenarios: '{}' }
 
-      vi.mocked(mockPrisma.preset.findUnique).mockResolvedValue(existingPreset as any)
-      vi.mocked(mockPrisma.preset.update).mockResolvedValue(existingPreset as any)
+      vi.mocked(mockPrisma.preset.findUnique).mockResolvedValue(existingPreset as unknown)
+      vi.mocked(mockPrisma.screen.findMany).mockResolvedValue([{ id: 'screen-1' }] as unknown)
+      vi.mocked(mockPrisma.scenario.findMany).mockResolvedValue([{ name: 'scenario-1' }] as unknown)
+      vi.mocked(mockPrisma.preset.update).mockResolvedValue(existingPreset as unknown)
 
       await request(app)
         .put('/companion/presets/1')
@@ -382,7 +468,7 @@ describe('companion router', () => {
     })
 
     it('returns 400 when name is empty string', async () => {
-      vi.mocked(mockPrisma.preset.findUnique).mockResolvedValue({ id: '1', name: 'Test', scenarios: '{}' } as any)
+      vi.mocked(mockPrisma.preset.findUnique).mockResolvedValue({ id: '1', name: 'Test', scenarios: '{}' } as unknown)
 
       const response = await request(app)
         .put('/companion/presets/1')
@@ -393,7 +479,7 @@ describe('companion router', () => {
     })
 
     it('returns 400 when scenarios is not an object', async () => {
-      vi.mocked(mockPrisma.preset.findUnique).mockResolvedValue({ id: '1', name: 'Test', scenarios: '{}' } as any)
+      vi.mocked(mockPrisma.preset.findUnique).mockResolvedValue({ id: '1', name: 'Test', scenarios: '{}' } as unknown)
 
       const response = await request(app)
         .put('/companion/presets/1')
@@ -417,8 +503,8 @@ describe('companion router', () => {
 
   describe('DELETE /companion/presets/:id', () => {
     it('deletes an existing preset', async () => {
-      vi.mocked(mockPrisma.preset.findUnique).mockResolvedValue({ id: '1', name: 'Test', scenarios: '{}' } as any)
-      vi.mocked(mockPrisma.preset.delete).mockResolvedValue({ id: '1', name: 'Test', scenarios: '{}' } as any)
+      vi.mocked(mockPrisma.preset.findUnique).mockResolvedValue({ id: '1', name: 'Test', scenarios: '{}' } as unknown)
+      vi.mocked(mockPrisma.preset.delete).mockResolvedValue({ id: '1', name: 'Test', scenarios: '{}' } as unknown)
 
       const response = await request(app).delete('/companion/presets/1')
 
@@ -448,8 +534,8 @@ describe('companion router', () => {
 
   describe('POST /companion/screens/:id/content', () => {
     it('updates screen content', async () => {
-      vi.mocked(mockPrisma.screen.findUnique).mockResolvedValue({ id: 'screen-1', name: 'Screen 1', displayId: 'display-1' } as any)
-      vi.mocked(mockPrisma.screenState.upsert).mockResolvedValue({} as any)
+      vi.mocked(mockPrisma.screen.findUnique).mockResolvedValue({ id: 'screen-1', name: 'Screen 1', displayId: 'display-1' } as unknown)
+      vi.mocked(mockPrisma.screenState.upsert).mockResolvedValue({} as unknown)
       vi.mocked(broadcastState).mockResolvedValue(undefined)
 
       const response = await request(app)
@@ -460,8 +546,8 @@ describe('companion router', () => {
       expect(response.body).toEqual({ success: true })
       expect(mockPrisma.screenState.upsert).toHaveBeenCalledWith({
         where: { screenId: 'screen-1' },
-        update: { imageSrc: '/images/test.png' },
-        create: { screenId: 'screen-1', imageSrc: '/images/test.png' },
+        update: { imageSrc: '/images/test.png', scenario: null },
+        create: { screenId: 'screen-1', imageSrc: '/images/test.png', scenario: null },
       })
       expect(broadcastState).toHaveBeenCalled()
     })
@@ -507,8 +593,8 @@ describe('companion router', () => {
 
   describe('POST /companion/screens/:id/off', () => {
     it('turns off a screen', async () => {
-      vi.mocked(mockPrisma.screen.findUnique).mockResolvedValue({ id: 'screen-1', name: 'Screen 1', displayId: 'display-1' } as any)
-      vi.mocked(mockPrisma.screenState.upsert).mockResolvedValue({} as any)
+      vi.mocked(mockPrisma.screen.findUnique).mockResolvedValue({ id: 'screen-1', name: 'Screen 1', displayId: 'display-1' } as unknown)
+      vi.mocked(mockPrisma.screenState.upsert).mockResolvedValue({} as unknown)
       vi.mocked(broadcastState).mockResolvedValue(undefined)
 
       const response = await request(app).post('/companion/screens/screen-1/off').send({})
@@ -549,8 +635,8 @@ describe('companion router', () => {
         screenId: 'screen-1',
         scenario: 'scenario-1',
         imagePath: '/images/triggered.png',
-      } as any)
-      vi.mocked(mockPrisma.screenState.upsert).mockResolvedValue({} as any)
+      } as unknown)
+      vi.mocked(mockPrisma.screenState.upsert).mockResolvedValue({} as unknown)
       vi.mocked(broadcastState).mockResolvedValue(undefined)
 
       const response = await request(app)
@@ -621,14 +707,22 @@ describe('companion router', () => {
     it('triggers a preset for multiple screens', async () => {
       const preset = { id: 'preset-1', name: 'Test Preset', scenarios: JSON.stringify({ 'screen-1': 'scenario-1', 'screen-2': 'scenario-2' }) }
 
-      vi.mocked(mockPrisma.preset.findUnique).mockResolvedValue(preset as any)
-      vi.mocked(mockPrisma.scenarioAssignment.findUnique).mockResolvedValue({
-        id: '1',
-        screenId: 'screen-1',
-        scenario: 'scenario-1',
-        imagePath: '/images/s1.png',
-      } as any)
-      vi.mocked(mockPrisma.screenState.upsert).mockResolvedValue({} as any)
+      vi.mocked(mockPrisma.preset.findUnique).mockResolvedValue(preset as unknown)
+      vi.mocked(mockPrisma.scenarioAssignment.findUnique)
+        .mockResolvedValueOnce({
+          id: '1',
+          screenId: 'screen-1',
+          scenario: 'scenario-1',
+          imagePath: '/images/s1.png',
+        } as unknown)
+        .mockResolvedValueOnce({
+          id: '2',
+          screenId: 'screen-2',
+          scenario: 'scenario-2',
+          imagePath: '/images/s2.png',
+        } as unknown)
+      vi.mocked(mockPrisma.screenState.upsert).mockResolvedValue({} as unknown)
+      vi.mocked(mockPrisma.$transaction).mockImplementation((fns: Promise<unknown>[]) => Promise.all(fns))
       vi.mocked(broadcastState).mockResolvedValue(undefined)
 
       const response = await request(app)
@@ -636,7 +730,8 @@ describe('companion router', () => {
         .send({ presetId: 'preset-1' })
 
       expect(response.status).toBe(200)
-      expect(response.body).toEqual({ success: true })
+      expect(response.body).toEqual({ success: true, activated: 2, skipped: 0 })
+      expect(mockPrisma.$transaction).toHaveBeenCalled()
       expect(broadcastState).toHaveBeenCalled()
     })
 
@@ -670,7 +765,7 @@ describe('companion router', () => {
         id: 'preset-1',
         name: 'Test',
         scenarios: 'invalid json',
-      } as any)
+      } as unknown)
 
       const response = await request(app)
         .post('/companion/presets/trigger')
@@ -683,14 +778,15 @@ describe('companion router', () => {
     it('handles missing scenario assignments gracefully', async () => {
       const preset = { id: 'preset-1', name: 'Test Preset', scenarios: JSON.stringify({ 'screen-1': 'scenario-1', 'screen-2': 'scenario-2' }) }
 
-      vi.mocked(mockPrisma.preset.findUnique).mockResolvedValue(preset as any)
+      vi.mocked(mockPrisma.preset.findUnique).mockResolvedValue(preset as unknown)
       vi.mocked(mockPrisma.scenarioAssignment.findUnique).mockResolvedValueOnce({
         id: '1',
         screenId: 'screen-1',
         scenario: 'scenario-1',
         imagePath: '/images/s1.png',
-      } as any).mockResolvedValueOnce(null)
-      vi.mocked(mockPrisma.screenState.upsert).mockResolvedValue({} as any)
+      } as unknown).mockResolvedValueOnce(null)
+      vi.mocked(mockPrisma.screenState.upsert).mockResolvedValue({} as unknown)
+      vi.mocked(mockPrisma.$transaction).mockImplementation((fns: Promise<unknown>[]) => Promise.all(fns))
       vi.mocked(broadcastState).mockResolvedValue(undefined)
 
       const response = await request(app)
@@ -698,7 +794,31 @@ describe('companion router', () => {
         .send({ presetId: 'preset-1' })
 
       expect(response.status).toBe(200)
-      expect(response.body).toEqual({ success: true })
+      expect(response.body).toEqual({ success: true, activated: 1, skipped: 1 })
+    })
+
+    it('uses $transaction for atomic upserts', async () => {
+      const preset = { id: 'preset-1', name: 'Test Preset', scenarios: JSON.stringify({ 'screen-1': 'scenario-1' }) }
+
+      vi.mocked(mockPrisma.preset.findUnique).mockResolvedValue(preset as unknown)
+      vi.mocked(mockPrisma.scenarioAssignment.findUnique).mockResolvedValue({
+        id: '1',
+        screenId: 'screen-1',
+        scenario: 'scenario-1',
+        imagePath: '/images/s1.png',
+      } as unknown)
+      vi.mocked(mockPrisma.screenState.upsert).mockResolvedValue({} as unknown)
+      vi.mocked(mockPrisma.$transaction).mockImplementation((fns: Promise<unknown>[]) => Promise.all(fns))
+      vi.mocked(broadcastState).mockResolvedValue(undefined)
+
+      await request(app)
+        .post('/companion/presets/trigger')
+        .send({ presetId: 'preset-1' })
+
+      expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1)
+      const [txCalls] = vi.mocked(mockPrisma.$transaction).mock.calls[0]
+      expect(Array.isArray(txCalls)).toBe(true)
+      expect(txCalls.length).toBeGreaterThan(0)
     })
 
     it('handles database errors', async () => {

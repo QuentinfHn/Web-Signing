@@ -12,7 +12,7 @@ describe('logger', () => {
     logger.info('test message')
     expect(console.log).toHaveBeenCalled()
     expect(console.log).toHaveBeenCalledWith(
-      expect.any(String),
+      expect.stringMatching(/.+/),
       '[INFO]',
       'test message'
     )
@@ -22,7 +22,7 @@ describe('logger', () => {
     logger.error('test error')
     expect(console.error).toHaveBeenCalled()
     expect(console.error).toHaveBeenCalledWith(
-      expect.any(String),
+      expect.stringMatching(/.+/),
       '[ERROR]',
       'test error'
     )
@@ -32,7 +32,7 @@ describe('logger', () => {
     logger.warn('test warning')
     expect(console.warn).toHaveBeenCalled()
     expect(console.warn).toHaveBeenCalledWith(
-      expect.any(String),
+      expect.stringMatching(/.+/),
       '[WARN]',
       'test warning'
     )
@@ -41,7 +41,7 @@ describe('logger', () => {
   it('should support multiple arguments', () => {
     logger.info('message', { data: 'test' }, 123)
     expect(console.log).toHaveBeenCalledWith(
-      expect.any(String),
+      expect.stringMatching(/.+/),
       '[INFO]',
       'message',
       { data: 'test' },

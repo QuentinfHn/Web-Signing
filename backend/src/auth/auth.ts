@@ -66,7 +66,7 @@ export function generateToken(): string {
 export function verifyToken(token: string): JWTPayload | null {
     try {
         const decoded = jwt.verify(token, SECRET);
-        if (typeof decoded === 'object' && decoded !== null && 'authenticated' in decoded) {
+        if (typeof decoded === 'object' && decoded !== null && 'authenticated' in decoded && decoded.authenticated === true) {
             return decoded as JWTPayload;
         }
         return null;
