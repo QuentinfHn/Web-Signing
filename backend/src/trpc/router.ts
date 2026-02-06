@@ -4,6 +4,7 @@ import { prisma } from "../prisma/client.js";
 import { verifyPassword, generateToken, isAuthEnabled } from "../auth/auth.js";
 import type { Context } from "./context.js";
 import { invalidateDisplaysCache, invalidateScreensCache, invalidateStateCache, invalidateScenarioCache } from "../services/cache.js";
+import { ensureMinimumScenarios, MIN_SCENARIO_COUNT } from "../services/scenarioDefaults.js";
 import { getScreenStateMap } from "../services/screenState.js";
 import { isVnnoxEnabled, fetchPlayerList, fetchOnlineStatuses } from "../services/vnnox.js";
 import { contentPath } from "../config/paths.js";
@@ -1285,19 +1286,10 @@ export const scenarioNamesRouter = router({
             return { success: true };
         }),
 
-    // Seed default scenarios if none exist
+    // Ensure minimum scenario count exists (used for first-time and legacy installs)
     seedDefaults: protectedProcedure.mutation(async () => {
-        const count = await prisma.scenario.count();
-        if (count === 0) {
-            const defaults = ["Scene 1", "Scene 2", "Scene 3"];
-            for (let i = 0; i < defaults.length; i++) {
-                await prisma.scenario.create({
-                    data: { name: defaults[i], displayOrder: i },
-                });
-            }
-            return { created: defaults.length };
-        }
-        return { created: 0 };
+        const created = await ensureMinimumScenarios();
+        return { created, minimum: MIN_SCENARIO_COUNT };
     }),
 });
 

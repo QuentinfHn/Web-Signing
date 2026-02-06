@@ -433,15 +433,15 @@ export default function Control() {
         }).catch(console.error);
 
         // Fetch persistent scenario names from DB
-        trpcClient.scenarioNames.list.query().then(scenarioList => {
-            if (scenarioList.length === 0) {
-                // Seed defaults if none exist
-                trpcClient.scenarioNames.seedDefaults.mutate().then(() => {
-                    trpcClient.scenarioNames.list.query().then((s: Scenario[]) => setScenarios(s.map((sc: Scenario) => sc.name)));
-                });
-            } else {
-                setScenarios(scenarioList.map((s: Scenario) => s.name));
+        trpcClient.scenarioNames.list.query().then(async (scenarioList) => {
+            if (scenarioList.length < 4) {
+                // Top up defaults when a legacy setup has fewer than 4 scenarios.
+                await trpcClient.scenarioNames.seedDefaults.mutate();
+                const refreshedScenarios = await trpcClient.scenarioNames.list.query();
+                setScenarios(refreshedScenarios.map((scenario: Scenario) => scenario.name));
+                return;
             }
+            setScenarios(scenarioList.map((scenario: Scenario) => scenario.name));
         }).catch(console.error);
     }, []);
 

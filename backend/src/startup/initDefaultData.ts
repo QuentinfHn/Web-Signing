@@ -1,4 +1,5 @@
 import { prisma } from "../prisma/client.js";
+import { ensureMinimumScenarios, MIN_SCENARIO_COUNT } from "../services/scenarioDefaults.js";
 import { logger } from "../utils/logger.js";
 
 /**
@@ -7,7 +8,7 @@ import { logger } from "../utils/logger.js";
  */
 export async function initDefaultData(): Promise<void> {
     try {
-        // Check if any displays exist
+        // Check whether displays already exist
         const displayCount = await prisma.display.count();
 
         if (displayCount === 0) {
@@ -36,21 +37,15 @@ export async function initDefaultData(): Promise<void> {
             });
             logger.info("✅ Created default screen: 512x512");
 
-            // Also seed default scenarios if they don't exist
-            const scenarioCount = await prisma.scenario.count();
-            if (scenarioCount === 0) {
-                const defaults = ["Scene 1", "Scene 2", "Scene 3"];
-                for (let i = 0; i < defaults.length; i++) {
-                    await prisma.scenario.create({
-                        data: { name: defaults[i], displayOrder: i },
-                    });
-                }
-                logger.info("✅ Created default scenarios");
-            }
-
             logger.info("🎉 Default configuration complete!");
         } else {
             logger.info(`📊 Found ${displayCount} existing display(s), skipping initialization`);
+        }
+
+        // Ensure there are always at least 4 scenario names available.
+        const createdScenarios = await ensureMinimumScenarios();
+        if (createdScenarios > 0) {
+            logger.info(`✅ Added ${createdScenarios} scenario(s) to reach minimum of ${MIN_SCENARIO_COUNT}`);
         }
     } catch (error) {
         logger.error("Failed to initialize default data:", error);
