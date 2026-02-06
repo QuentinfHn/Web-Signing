@@ -4,6 +4,10 @@ import crypto from "crypto";
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = "7d";
 
+if (!process.env.ADMIN_PASSWORD) {
+    throw new Error("ADMIN_PASSWORD is required. Set ADMIN_PASSWORD environment variable to secure the API.");
+}
+
 if (!JWT_SECRET && process.env.NODE_ENV === "production") {
     throw new Error("JWT_SECRET is required in production. Set JWT_SECRET environment variable with a secure random string.");
 }
@@ -22,9 +26,10 @@ export interface JWTPayload {
 
 /**
  * Check if password protection is enabled (ADMIN_PASSWORD is set)
+ * Note: ADMIN_PASSWORD is now required, so this always returns true
  */
 export function isAuthEnabled(): boolean {
-    return !!process.env.ADMIN_PASSWORD;
+    return true; // ADMIN_PASSWORD is required at startup
 }
 
 /**
@@ -33,7 +38,7 @@ export function isAuthEnabled(): boolean {
 export function verifyPassword(inputPassword: string): boolean {
     const adminPassword = process.env.ADMIN_PASSWORD;
     if (!adminPassword) {
-        return true; // No password set = always valid
+        return false; // No password set = reject (should never happen due to startup check)
     }
 
     // Use timing-safe comparison to prevent timing attacks

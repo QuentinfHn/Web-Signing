@@ -6,12 +6,12 @@ This document explains how to integrate the LED Controller with Bitfocus Compani
 
 ### Authentication
 
-The API supports two authentication methods when `ADMIN_PASSWORD` is set:
+The API **requires** authentication. `ADMIN_PASSWORD` must be set in your environment variables (the server will not start without it).
+
+Two authentication methods are supported:
 
 1. **x-api-key header**: Send the `ADMIN_PASSWORD` value directly
 2. **Authorization Bearer**: Use a JWT token (obtained from the login endpoint)
-
-If `ADMIN_PASSWORD` is not set, the API is open (no authentication required).
 
 ### CORS Headers
 

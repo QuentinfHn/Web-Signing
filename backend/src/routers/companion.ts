@@ -1,6 +1,6 @@
 import express from "express";
 import { prisma } from "../prisma/client.js";
-import { verifyToken, verifyPassword, isAuthEnabled } from "../auth/auth.js";
+import { verifyToken, verifyPassword } from "../auth/auth.js";
 import { broadcastState } from "../services/screenState.js";
 import { invalidateStateCache } from "../services/cache.js";
 import { logger } from "../utils/logger.js";
@@ -11,11 +11,7 @@ const router = express.Router();
 router.use(companionRateLimiter);
 
 function requireCompanionAuth(req: express.Request, res: express.Response, next: express.NextFunction) {
-    if (!isAuthEnabled()) {
-        next();
-        return;
-    }
-
+    // Authentication is always required - ADMIN_PASSWORD must be set at startup
     const apiKey = Array.isArray(req.headers["x-api-key"]) ? req.headers["x-api-key"][0] : req.headers["x-api-key"];
     const authHeader = Array.isArray(req.headers.authorization) ? req.headers.authorization[0] : req.headers.authorization;
 
